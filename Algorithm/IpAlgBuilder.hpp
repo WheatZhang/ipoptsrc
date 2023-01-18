@@ -25,6 +25,8 @@ class EqMultiplierCalculator;
 class IterateInitializer;
 class LineSearch;
 class MuUpdate;
+// zhangduo added
+class HomotopyUpdate;
 
 /** Builder for creating a complete IpoptAlg object.
  *
@@ -226,6 +228,14 @@ public:
       const std::string& prefix
    );
 
+   //zhangduo added
+   virtual SmartPtr<HomotopyUpdate> BuildHomotopyUpdate(
+      const Journalist&     jnlst,
+      const OptionsList&    options,
+      const std::string&    prefix
+   );
+   //zhangduo added ends
+
    /** Creates an instance of the SearchDirectionCalculator
     *  class. This method is called in the default implementation of
     *  BuildBasicAlgorithm.  It can be overloaded to customize that
@@ -387,6 +397,8 @@ private:
    SmartPtr<IterateInitializer> IterInitializer_;
    SmartPtr<LineSearch> LineSearch_;
    SmartPtr<MuUpdate> MuUpdate_;
+   // zhangduo added
+   SmartPtr<HomotopyUpdate> HomotopyUpdate_;
    ///@}
 
    /** @name Commonly used solver components

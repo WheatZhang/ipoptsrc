@@ -50,6 +50,8 @@
 #include "IpEquilibrationScaling.hpp"
 #include "IpExactHessianUpdater.hpp"
 #include "IpSlackBasedTSymScalingMethod.hpp"
+// zhangduo added
+#include "IpHomotopyUpdate.hpp"
 
 #include "IpLinearSolvers.h"
 #include "IpMa27TSolverInterface.hpp"
@@ -750,8 +752,12 @@ SmartPtr<IpoptAlgorithm> AlgorithmBuilder::BuildBasicAlgorithm(
     */
    MuUpdate_ = BuildMuUpdate(jnlst, options, prefix);
 
+   // zhangduo added
+   HomotopyUpdate_ = BuildHomotopyUpdate(jnlst, options, prefix);
+   // zhangduo added ends
+
    SmartPtr<IpoptAlgorithm> alg = new IpoptAlgorithm(SearchDirCalc_, LineSearch_, MuUpdate_, ConvCheck_,
-         IterInitializer_, IterOutput_, HessUpdater_, EqMultCalculator_, linear_solver);
+         IterInitializer_, IterOutput_, HessUpdater_, EqMultCalculator_, HomotopyUpdate_, linear_solver);
 
    return alg;
 }
@@ -800,6 +806,18 @@ SmartPtr<ConvergenceCheck> AlgorithmBuilder::BuildConvergenceCheck(
    SmartPtr<ConvergenceCheck> ConvCheck = new OptimalityErrorConvergenceCheck();
    return ConvCheck;
 }
+
+// zhangduo added
+SmartPtr<HomotopyUpdate> AlgorithmBuilder::BuildHomotopyUpdate(
+   const Journalist&     /*jnlst*/,
+   const OptionsList&    /*options*/,
+   const std::string&    /*prefix*/
+)
+{
+   SmartPtr<HomotopyUpdate> HomoUpdate = new HomotopyUpdate();
+   return HomoUpdate;
+}
+// zhangduo added ends
 
 SmartPtr<SearchDirectionCalculator> AlgorithmBuilder::BuildSearchDirectionCalculator(
    const Journalist&     jnlst,

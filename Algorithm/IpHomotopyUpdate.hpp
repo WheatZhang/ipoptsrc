@@ -15,7 +15,8 @@ public:
    /**@name Constructors / Destructor */
    ///@{
    /** Default Constructor */
-   HomotopyUpdate();
+   HomotopyUpdate()
+   { }
 
    /** Destructor */
    virtual ~HomotopyUpdate()
@@ -25,7 +26,7 @@ public:
    virtual bool InitializeImpl(
       const OptionsList& options,
       const std::string& prefix
-   ) = 0;
+   );
 
    /** Register the options for this class */
    static void RegisterOptions(
@@ -53,6 +54,9 @@ private:
       const HomotopyUpdate&
    );
    ///@}
+
+   Number homotopy_term_coeff_;
+   Number homotopy_stepsize_;
 
 };
 

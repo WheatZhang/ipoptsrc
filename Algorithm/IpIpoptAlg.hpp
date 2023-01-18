@@ -19,6 +19,8 @@
 #include "IpAlgTypes.hpp"
 #include "IpHessianUpdater.hpp"
 #include "IpEqMultCalculator.hpp"
+// zhangduo added
+#include "IpHomotopyUpdate.hpp"
 
 namespace Ipopt
 {
@@ -50,6 +52,7 @@ public:
     *
     *  The optional linear_solver_name is used for printing.
     */
+   // zhangduo added the homotopy object
    IpoptAlgorithm(
       const SmartPtr<SearchDirectionCalculator>& search_dir_calculator,  ///< search direction calculator
       const SmartPtr<LineSearch>&                line_search,            ///< line search
@@ -59,6 +62,7 @@ public:
       const SmartPtr<IterationOutput>&           iter_output,            ///< iteration output
       const SmartPtr<HessianUpdater>&            hessian_updater,        ///< hessian updater
       const SmartPtr<EqMultiplierCalculator>&    eq_multiplier_calculator = NULL,  ///< calculator for multipliers
+      const SmartPtr<HomotopyUpdate>&            homotopy_update = NULL,         ///< homotopy
       const std::string&                         linear_solver_name = ""  ///< name of linear solver @since 3.14.0
    );
 
@@ -130,6 +134,8 @@ private:
    SmartPtr<IterateInitializer> iterate_initializer_;
    SmartPtr<IterationOutput> iter_output_;
    SmartPtr<HessianUpdater> hessian_updater_;
+   //zhangduo added
+   SmartPtr<HomotopyUpdate> homotopy_update_;
    /** The multiplier calculator (for y_c and y_d) has to be set only
     *  if option recalc_y is set to true
     */

@@ -25,6 +25,7 @@ namespace Ipopt
 static const Index dbg_verbosity = 0;
 #endif
 
+// zhangduo added homotopy objects
 IpoptAlgorithm::IpoptAlgorithm(
    const SmartPtr<SearchDirectionCalculator>& search_dir_calculator,
    const SmartPtr<LineSearch>&                line_search,
@@ -34,6 +35,7 @@ IpoptAlgorithm::IpoptAlgorithm(
    const SmartPtr<IterationOutput>&           iter_output,
    const SmartPtr<HessianUpdater>&            hessian_updater,
    const SmartPtr<EqMultiplierCalculator>&    eq_multiplier_calculator, /* = NULL*/
+   const SmartPtr<HomotopyUpdate>&            homotopy_update, /* = NULL*/     
    const std::string&                         linear_solver_name /* = "" */
 )
    : search_dir_calculator_(search_dir_calculator),
@@ -44,7 +46,8 @@ IpoptAlgorithm::IpoptAlgorithm(
      iter_output_(iter_output),
      hessian_updater_(hessian_updater),
      eq_multiplier_calculator_(eq_multiplier_calculator),
-     linear_solver_name_(linear_solver_name)
+     linear_solver_name_(linear_solver_name),
+     homotopy_update_(homotopy_update)
 {
    DBG_START_METH("IpoptAlgorithm::IpoptAlgorithm",
                   dbg_verbosity);
@@ -227,6 +230,11 @@ bool IpoptAlgorithm::InitializeImpl(
 
    retvalue = hessian_updater_->Initialize(Jnlst(), IpNLP(), IpData(), IpCq(), *my_options, prefix);
    ASSERT_EXCEPTION(retvalue, FAILED_INITIALIZATION, "the hessian_updater strategy failed to initialize.");
+
+   // zhangduo added
+   retvalue = homotopy_update_->Initialize(Jnlst(), IpNLP(), IpData(), IpCq(), *my_options, prefix);
+   ASSERT_EXCEPTION(retvalue, FAILED_INITIALIZATION, "the homotopy_update strategy failed to initialize.");
+   // zhangduo added ends
 
    my_options->GetNumericValue("kappa_sigma", kappa_sigma_, prefix);
    if( !my_options->GetBoolValue("recalc_y", recalc_y_, prefix) )

@@ -35,6 +35,8 @@
 #include "IpRestoMinC_1Nrm.hpp"
 #include "IpRestoPenaltyConvCheck.hpp"
 #include "IpWarmStartIterateInitializer.hpp"
+// zhangduo added
+#include "IpHomotopyUpdate.hpp"
 
 namespace Ipopt
 {
@@ -99,6 +101,9 @@ void RegisterOptions_Algorithm(
    MinC_1NrmRestorationPhase::RegisterOptions(roptions);
    roptions->SetRegisteringCategory("Warm Start");
    WarmStartIterateInitializer::RegisterOptions(roptions);
+   // zhangduo added
+   roptions->SetRegisteringCategory("Homotopy Update");
+   HomotopyUpdate::RegisterOptions(roptions);
 }
 
 } // namespace Ipopt
