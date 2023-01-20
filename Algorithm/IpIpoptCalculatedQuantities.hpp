@@ -677,6 +677,10 @@ public:
       SmartPtr<RegisteredOptions> roptions
    );
 
+   // zhangduo added
+   void ClearHomotopyRelatedCaches();
+   // zhangduo added ends
+
 private:
    /**@name Default Compiler Generated Methods
     * (Hidden to avoid implicit creation/calling).

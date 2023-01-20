@@ -369,6 +369,18 @@ public:
    {
       return mu_initialized_;
    }
+   // zhangduo added
+   Number curr_homotopy_target() const
+   {
+      return curr_homotopy_target_;
+   }
+   void Set_homotopy_target(
+      Number homotopy_target
+   )
+   {
+      curr_homotopy_target_ = homotopy_target;
+   }
+   // zhangduo added ends
 
    Number curr_tau() const
    {
@@ -694,6 +706,10 @@ private:
    /** current barrier parameter */
    Number curr_mu_;
    bool mu_initialized_;
+
+   // zhangduo added
+   Number curr_homotopy_target_;
+   // zhangduo added ends
 
    /** current fraction to the boundary parameter */
    Number curr_tau_;

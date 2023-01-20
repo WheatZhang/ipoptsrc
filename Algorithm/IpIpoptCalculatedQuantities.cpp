@@ -608,7 +608,8 @@ Number IpoptCalculatedQuantities::curr_f()
    
    // zhangduo added
    DenseVector* dx = static_cast<DenseVector*>(const_cast<Vector*> (GetRawPtr(x)));
-   result = result + HOMO_COEFF*(dx->Values()[HOMO_VAR_INDEX]-HOMO_END)*(dx->Values()[HOMO_VAR_INDEX]-HOMO_END);
+   result = result + HOMO_COEFF*(dx->Values()[HOMO_VAR_INDEX]-ip_data_->curr_homotopy_target())*\
+            (dx->Values()[HOMO_VAR_INDEX]-ip_data_->curr_homotopy_target());
    // zhangduo added ends
 
    return result;
@@ -705,7 +706,7 @@ SmartPtr<const Vector> IpoptCalculatedQuantities::curr_grad_f()
    // zhangduo added and modified return value
    Number added_quantity;
    DenseVector* dx = static_cast<DenseVector*>(const_cast<Vector*> (GetRawPtr(x)));
-   added_quantity = 2*HOMO_COEFF*(dx->Values()[HOMO_VAR_INDEX]-HOMO_END);
+   added_quantity = 2*HOMO_COEFF*(dx->Values()[HOMO_VAR_INDEX]-ip_data_->curr_homotopy_target());
    DenseVector* d_result = static_cast<DenseVector*>(const_cast<Vector*> (GetRawPtr(result)));
    d_result->Values()[HOMO_VAR_INDEX]=d_result->Values()[HOMO_VAR_INDEX]+added_quantity;
    //for(Index i=0;i<=2;i++)
@@ -3130,6 +3131,7 @@ Number IpoptCalculatedQuantities::curr_nlp_error()
       }
       else
       {
+         printf("calculate nlp error\n"); // zhangduo added
          Number s_d = 0;
          Number s_c = 0;
          ComputeOptimalityErrorScaling(*ip_data_->curr()->y_c(), *ip_data_->curr()->y_d(), *ip_data_->curr()->z_L(),
@@ -3861,5 +3863,34 @@ Vector& IpoptCalculatedQuantities::Tmp_s_U()
    }
    return *tmp_s_U_;
 }
+// zhangduo added
+void IpoptCalculatedQuantities::ClearHomotopyRelatedCaches()
+{
+   curr_f_cache_.Clear();
+   trial_f_cache_.Clear();
+   curr_grad_f_cache_.Clear();
+   trial_grad_f_cache_.Clear();
+   curr_barrier_obj_cache_.Clear();
+   trial_barrier_obj_cache_.Clear();
+   curr_grad_barrier_obj_x_cache_.Clear();
+   curr_grad_barrier_obj_s_cache_.Clear();
+   curr_exact_hessian_cache_.Clear();
+   curr_grad_lag_x_cache_.Clear();
+   trial_grad_lag_x_cache_.Clear();
+   curr_grad_lag_s_cache_.Clear();
+   trial_grad_lag_s_cache_.Clear();
+   curr_grad_lag_with_damping_x_cache_.Clear();
+   curr_grad_lag_with_damping_s_cache_.Clear();
+   curr_dual_infeasibility_cache_.Clear();
+   trial_dual_infeasibility_cache_.Clear();
+   unscaled_curr_dual_infeasibility_cache_.Clear();
+   curr_nlp_error_cache_.Clear();
+   unscaled_curr_nlp_error_cache_.Clear();
+   curr_barrier_error_cache_.Clear();
+   curr_primal_dual_system_error_cache_.Clear();
+   trial_primal_dual_system_error_cache_.Clear();
+
+}
+// zhangduo added ends
 
 } // namespace Ipopt

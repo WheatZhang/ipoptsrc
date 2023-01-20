@@ -345,76 +345,89 @@ SolverReturn IpoptAlgorithm::Optimize(
          IpData().TimingStats().PrintProblemStatistics().End();
       }
 
-      IpData().TimingStats().CheckConvergence().Start();
-      ConvergenceCheck::ConvergenceStatus conv_status = conv_check_->CheckConvergence();
-      IpData().TimingStats().CheckConvergence().End();
+      IpData().Set_homotopy_target(0);
 
-      // main loop
-      while( conv_status == ConvergenceCheck::CONTINUE )
+      ConvergenceCheck::ConvergenceStatus conv_status;
+      
+      // zhangduo added the homotopy loop
+      for (Index i=0; i <11; i++)
       {
-         // Set the Hessian Matrix
-         IpData().TimingStats().UpdateHessian().Start();
-         UpdateHessian();
-         IpData().TimingStats().UpdateHessian().End();
-
-         // do all the output for this iteration
-         IpData().TimingStats().OutputIteration().Start();
-         OutputIteration();
-         IpData().ResetInfo();
-         IpData().TimingStats().OutputIteration().End();
-
-         // initialize the flag that is set to true if the algorithm
-         // has to continue with an emergency fallback mode.  For
-         // example, when no search direction can be computed, continue
-         // with the restoration phase
-         bool emergency_mode = false;
-
-         // update the barrier parameter
-         IpData().TimingStats().UpdateBarrierParameter().Start();
-         emergency_mode = !UpdateBarrierParameter();
-         IpData().TimingStats().UpdateBarrierParameter().End();
-
-         if( !emergency_mode )
-         {
-            // solve the primal-dual system to get the full step
-            IpData().TimingStats().ComputeSearchDirection().Start();
-            emergency_mode = !ComputeSearchDirection();
-            IpData().TimingStats().ComputeSearchDirection().End();
-         }
-
-         // If we are in the emergency mode, ask the line search object
-         // to go to the fallback options.  If that isn't possible,
-         // issue error message
-         if( emergency_mode )
-         {
-            if( line_search_->ActivateFallbackMechanism() )
-            {
-               Jnlst().Printf(J_WARNING, J_MAIN,
-                              "WARNING: Problem in step computation; switching to emergency mode.\n");
-            }
-            else
-            {
-               Jnlst().Printf(J_ERROR, J_MAIN,
-                              "ERROR: Problem in step computation, but emergency mode cannot be activated.\n");
-               THROW_EXCEPTION(STEP_COMPUTATION_FAILED, "Step computation failed.");
-            }
-         }
-
-         // Compute the new iterate
-         IpData().TimingStats().ComputeAcceptableTrialPoint().Start();
-         ComputeAcceptableTrialPoint();
-         IpData().TimingStats().ComputeAcceptableTrialPoint().End();
-
-         // Accept the new iterate
-         IpData().TimingStats().AcceptTrialPoint().Start();
-         AcceptTrialPoint();
-         IpData().TimingStats().AcceptTrialPoint().End();
-
-         IpData().Set_iter_count(IpData().iter_count() + 1);
-
          IpData().TimingStats().CheckConvergence().Start();
          conv_status = conv_check_->CheckConvergence();
          IpData().TimingStats().CheckConvergence().End();
+
+         printf("current t=%f\n", IpData().curr_homotopy_target());
+         // main loop
+         while( conv_status == ConvergenceCheck::CONTINUE )
+         {
+            // Set the Hessian Matrix
+            IpData().TimingStats().UpdateHessian().Start();
+            UpdateHessian();
+            IpData().TimingStats().UpdateHessian().End();
+
+            // do all the output for this iteration
+            IpData().TimingStats().OutputIteration().Start();
+            OutputIteration();
+            IpData().ResetInfo();
+            IpData().TimingStats().OutputIteration().End();
+
+            // initialize the flag that is set to true if the algorithm
+            // has to continue with an emergency fallback mode.  For
+            // example, when no search direction can be computed, continue
+            // with the restoration phase
+            bool emergency_mode = false;
+
+            // update the barrier parameter
+            IpData().TimingStats().UpdateBarrierParameter().Start();
+            emergency_mode = !UpdateBarrierParameter();
+            IpData().TimingStats().UpdateBarrierParameter().End();
+
+            if( !emergency_mode )
+            {
+               // solve the primal-dual system to get the full step
+               IpData().TimingStats().ComputeSearchDirection().Start();
+               emergency_mode = !ComputeSearchDirection();
+               IpData().TimingStats().ComputeSearchDirection().End();
+            }
+
+            // If we are in the emergency mode, ask the line search object
+            // to go to the fallback options.  If that isn't possible,
+            // issue error message
+            if( emergency_mode )
+            {
+               if( line_search_->ActivateFallbackMechanism() )
+               {
+                  Jnlst().Printf(J_WARNING, J_MAIN,
+                                 "WARNING: Problem in step computation; switching to emergency mode.\n");
+               }
+               else
+               {
+                  Jnlst().Printf(J_ERROR, J_MAIN,
+                                 "ERROR: Problem in step computation, but emergency mode cannot be activated.\n");
+                  THROW_EXCEPTION(STEP_COMPUTATION_FAILED, "Step computation failed.");
+               }
+            }
+
+            // Compute the new iterate
+            IpData().TimingStats().ComputeAcceptableTrialPoint().Start();
+            ComputeAcceptableTrialPoint();
+            IpData().TimingStats().ComputeAcceptableTrialPoint().End();
+
+            // Accept the new iterate
+            IpData().TimingStats().AcceptTrialPoint().Start();
+            AcceptTrialPoint();
+            IpData().TimingStats().AcceptTrialPoint().End();
+
+            IpData().Set_iter_count(IpData().iter_count() + 1);
+
+            IpData().TimingStats().CheckConvergence().Start();
+            conv_status = conv_check_->CheckConvergence();
+            IpData().TimingStats().CheckConvergence().End();
+         }
+         // Prepare for the next homotopy iteration
+         IpData().Set_homotopy_target(i*0.1);
+         IpCq().ClearHomotopyRelatedCaches();
+         line_search_->Reset();
       }
 
       IpData().TimingStats().OutputIteration().Start();
