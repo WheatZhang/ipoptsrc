@@ -12,9 +12,7 @@
 
 // zhangduo added
 #include "IpSymTMatrix.hpp"
-#define HOMO_END 1
-#define HOMO_VAR_INDEX 2
-#define HOMO_COEFF 100
+#include "IpHomotopyUpdate.hpp"
 // zhangduo added ends
 
 #include <cmath>
@@ -608,8 +606,10 @@ Number IpoptCalculatedQuantities::curr_f()
    
    // zhangduo added
    DenseVector* dx = static_cast<DenseVector*>(const_cast<Vector*> (GetRawPtr(x)));
-   result = result + HOMO_COEFF*(dx->Values()[HOMO_VAR_INDEX]-ip_data_->curr_homotopy_target())*\
-            (dx->Values()[HOMO_VAR_INDEX]-ip_data_->curr_homotopy_target());
+   result = result + HOMO_COEFF*(dx->Values()[HOMO_VAR_INDEX1]-ip_data_->curr_homotopy_target1())*\
+            (dx->Values()[HOMO_VAR_INDEX1]-ip_data_->curr_homotopy_target1())+\
+            HOMO_COEFF*(dx->Values()[HOMO_VAR_INDEX2]-ip_data_->curr_homotopy_target2())*\
+            (dx->Values()[HOMO_VAR_INDEX2]-ip_data_->curr_homotopy_target2());
    // zhangduo added ends
 
    return result;
@@ -706,9 +706,12 @@ SmartPtr<const Vector> IpoptCalculatedQuantities::curr_grad_f()
    // zhangduo added and modified return value
    Number added_quantity;
    DenseVector* dx = static_cast<DenseVector*>(const_cast<Vector*> (GetRawPtr(x)));
-   added_quantity = 2*HOMO_COEFF*(dx->Values()[HOMO_VAR_INDEX]-ip_data_->curr_homotopy_target());
    DenseVector* d_result = static_cast<DenseVector*>(const_cast<Vector*> (GetRawPtr(result)));
-   d_result->Values()[HOMO_VAR_INDEX]=d_result->Values()[HOMO_VAR_INDEX]+added_quantity;
+
+   added_quantity = 2*HOMO_COEFF*(dx->Values()[HOMO_VAR_INDEX1]-ip_data_->curr_homotopy_target1());
+   d_result->Values()[HOMO_VAR_INDEX1]=d_result->Values()[HOMO_VAR_INDEX1]+added_quantity;
+   added_quantity = 2*HOMO_COEFF*(dx->Values()[HOMO_VAR_INDEX2]-ip_data_->curr_homotopy_target2());
+   d_result->Values()[HOMO_VAR_INDEX2]=d_result->Values()[HOMO_VAR_INDEX2]+added_quantity;
    //for(Index i=0;i<=2;i++)
    //{
    //   printf("d_result->Values()[%d]=%f\n",i,d_result->Values()[i]); // seems good
@@ -2020,12 +2023,17 @@ SmartPtr<const SymMatrix> IpoptCalculatedQuantities::curr_exact_hessian()
    for( Index i = 0; i < s_result->Nonzeros(); i++ )
    {
       // index in irow and jcol starts from 1 not 0
-      if((s_result->Irows()[i] == HOMO_VAR_INDEX+1) && (s_result->Jcols()[i] == HOMO_VAR_INDEX+1))
+      if((s_result->Irows()[i] == HOMO_VAR_INDEX1+1) && (s_result->Jcols()[i] == HOMO_VAR_INDEX1+1))
       {
          s_result->Values()[i] = s_result->Values()[i] + 2*HOMO_COEFF;
          //printf("modified hessian at %d,%d\n", i, i);
          //printf("s_result->Values()[i] %f\n", s_result->Values()[i]); // Good
-         break;
+      }
+      if((s_result->Irows()[i] == HOMO_VAR_INDEX2+1) && (s_result->Jcols()[i] == HOMO_VAR_INDEX2+1))
+      {
+         s_result->Values()[i] = s_result->Values()[i] + 2*HOMO_COEFF;
+         //printf("modified hessian at %d,%d\n", i, i);
+         //printf("s_result->Values()[i] %f\n", s_result->Values()[i]); // Good
       }
    }
    SmartPtr<const SymMatrix> result_added=s_result;
@@ -3131,7 +3139,6 @@ Number IpoptCalculatedQuantities::curr_nlp_error()
       }
       else
       {
-         printf("calculate nlp error\n"); // zhangduo added
          Number s_d = 0;
          Number s_c = 0;
          ComputeOptimalityErrorScaling(*ip_data_->curr()->y_c(), *ip_data_->curr()->y_d(), *ip_data_->curr()->z_L(),

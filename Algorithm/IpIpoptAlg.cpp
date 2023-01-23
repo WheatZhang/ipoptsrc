@@ -10,6 +10,11 @@
 #include "IpRestoPhase.hpp"
 #include "IpOrigIpoptNLP.hpp"
 #include "IpBacktrackingLineSearch.hpp"
+// zhangduo added - may delete in the future
+#include "math.h"
+#include "IpDenseVector.hpp"
+#include "IpHomotopyUpdate.hpp"
+// zhangduo added ends
 
 #ifdef IPOPT_HAS_HSL
 #include "CoinHslConfig.h"
@@ -345,18 +350,70 @@ SolverReturn IpoptAlgorithm::Optimize(
          IpData().TimingStats().PrintProblemStatistics().End();
       }
 
-      IpData().Set_homotopy_target(0);
+      Number t1_start=1;
+      Number t2_start=1;
+      Number t1_target=2;
+      Number t2_target=3;
+      Number t_step=0.1;
+
+      Number total_homotopy_distance = sqrt((t1_target-t1_start)*(t1_target-t1_start)+(t2_target-t2_start)*(t2_target-t2_start));
 
       ConvergenceCheck::ConvergenceStatus conv_status;
+      Number new_t1_target;
+      Number new_t2_target;
+      Number current_t1;
+      Number current_t2;
+      Number distance_to_target;
+      SmartPtr<const Vector> x;
+      DenseVector* dx;
       
       // zhangduo added the homotopy loop
-      for (Index i=0; i <11; i++)
+      bool homotopy_finish_flag=false;
+      bool first_iter=true;
+      Index count_ = 0;
+      while (!homotopy_finish_flag)
       {
+         count_++;
+         printf("count=%d.\n",count_);
+         if (count_>20)
+         {
+            break;
+         }
+         if (!first_iter)
+         {
+            x = IpData().curr()->x();
+            dx = static_cast<DenseVector*>(const_cast<Vector*> (GetRawPtr(x)));
+            current_t1 = dx->Values()[HOMO_VAR_INDEX1];
+            current_t2 = dx->Values()[HOMO_VAR_INDEX2];
+            distance_to_target = sqrt((t1_target-current_t1)*(t1_target-current_t1)+(t2_target-current_t2)*(t2_target-current_t2));
+            if (distance_to_target/total_homotopy_distance <= t_step)
+            {
+               new_t1_target=t1_target;
+               new_t2_target=t2_target;
+               homotopy_finish_flag=true;
+            }
+            else
+            {
+               new_t1_target=current_t1+total_homotopy_distance*t_step*(t1_target-current_t1);
+               new_t2_target=current_t2+total_homotopy_distance*t_step*(t2_target-current_t2);
+            }
+            IpData().Set_homotopy_target1(new_t1_target);
+            IpData().Set_homotopy_target2(new_t2_target);
+         }
+         else
+         {
+            IpData().Set_homotopy_target1(t1_start);
+            IpData().Set_homotopy_target2(t2_start);
+            first_iter=false;
+         }
+         printf("Set homotopy. t1=%f,t2=%f.\n", IpData().curr_homotopy_target1(), IpData().curr_homotopy_target2());
+         IpData().Set_mu(0.1); // why this will affect conv check?
+
          IpData().TimingStats().CheckConvergence().Start();
-         conv_status = conv_check_->CheckConvergence();
+         //conv_status = conv_check_->CheckConvergence();
+         conv_status = ConvergenceCheck::CONTINUE;
          IpData().TimingStats().CheckConvergence().End();
 
-         printf("current t=%f\n", IpData().curr_homotopy_target());
          // main loop
          while( conv_status == ConvergenceCheck::CONTINUE )
          {
@@ -425,7 +482,6 @@ SolverReturn IpoptAlgorithm::Optimize(
             IpData().TimingStats().CheckConvergence().End();
          }
          // Prepare for the next homotopy iteration
-         IpData().Set_homotopy_target(i*0.1);
          IpCq().ClearHomotopyRelatedCaches();
          line_search_->Reset();
       }

@@ -6,6 +6,10 @@
 
 #include "IpAlgStrategy.hpp"
 
+#define HOMO_VAR_INDEX1 12
+#define HOMO_VAR_INDEX2 13
+#define HOMO_COEFF 100
+
 namespace Ipopt
 {
 

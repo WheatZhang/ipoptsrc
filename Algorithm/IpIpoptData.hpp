@@ -370,15 +370,25 @@ public:
       return mu_initialized_;
    }
    // zhangduo added
-   Number curr_homotopy_target() const
+   Number curr_homotopy_target1() const
    {
-      return curr_homotopy_target_;
+      return curr_homotopy_target1_;
    }
-   void Set_homotopy_target(
-      Number homotopy_target
+   void Set_homotopy_target1(
+      Number homotopy_target1
    )
    {
-      curr_homotopy_target_ = homotopy_target;
+      curr_homotopy_target1_ = homotopy_target1;
+   }
+   Number curr_homotopy_target2() const
+   {
+      return curr_homotopy_target2_;
+   }
+   void Set_homotopy_target2(
+      Number homotopy_target2
+   )
+   {
+      curr_homotopy_target2_ = homotopy_target2;
    }
    // zhangduo added ends
 
@@ -708,7 +718,8 @@ private:
    bool mu_initialized_;
 
    // zhangduo added
-   Number curr_homotopy_target_;
+   Number curr_homotopy_target1_;
+   Number curr_homotopy_target2_;
    // zhangduo added ends
 
    /** current fraction to the boundary parameter */
