@@ -349,12 +349,18 @@ SolverReturn IpoptAlgorithm::Optimize(
          PrintProblemStatistics();
          IpData().TimingStats().PrintProblemStatistics().End();
       }
+      // eq_sys
+      // Number t1_start=0;
+      // Number t2_start=0;
+      // Number t1_target=1;
+      // Number t2_target=0;
 
+      // wo
       Number t1_start=1;
       Number t2_start=1;
       Number t1_target=2;
-      Number t2_target=3;
-      Number t_step=0.1;
+      Number t2_target=2;
+      Number t_step=0.2;
 
       Number total_homotopy_distance = sqrt((t1_target-t1_start)*(t1_target-t1_start)+(t2_target-t2_start)*(t2_target-t2_start));
 
@@ -381,10 +387,12 @@ SolverReturn IpoptAlgorithm::Optimize(
          }
          if (!first_iter)
          {
+            printf("Before set homotopy. t1_target=%f,t2_target=%f.\n", IpData().curr_homotopy_target1(), IpData().curr_homotopy_target2());
             x = IpData().curr()->x();
             dx = static_cast<DenseVector*>(const_cast<Vector*> (GetRawPtr(x)));
             current_t1 = dx->Values()[HOMO_VAR_INDEX1];
             current_t2 = dx->Values()[HOMO_VAR_INDEX2];
+            printf("Before set homotopy. t1_=%f,t2=%f.\n", current_t1, current_t2);
             distance_to_target = sqrt((t1_target-current_t1)*(t1_target-current_t1)+(t2_target-current_t2)*(t2_target-current_t2));
             if (distance_to_target/total_homotopy_distance <= t_step)
             {
@@ -406,12 +414,13 @@ SolverReturn IpoptAlgorithm::Optimize(
             IpData().Set_homotopy_target2(t2_start);
             first_iter=false;
          }
-         printf("Set homotopy. t1=%f,t2=%f.\n", IpData().curr_homotopy_target1(), IpData().curr_homotopy_target2());
+         printf("After set homotopy. t1_target=%f,t2_target=%f.\n", IpData().curr_homotopy_target1(), IpData().curr_homotopy_target2());
          IpData().Set_mu(0.1); // why this will affect conv check?
 
          IpData().TimingStats().CheckConvergence().Start();
-         //conv_status = conv_check_->CheckConvergence();
-         conv_status = ConvergenceCheck::CONTINUE;
+         conv_status = conv_check_->CheckConvergence();
+         //Force to do at least 1 iteration
+         //conv_status = ConvergenceCheck::CONTINUE;
          IpData().TimingStats().CheckConvergence().End();
 
          // main loop
@@ -484,6 +493,11 @@ SolverReturn IpoptAlgorithm::Optimize(
          // Prepare for the next homotopy iteration
          IpCq().ClearHomotopyRelatedCaches();
          line_search_->Reset();
+
+         if (conv_status != ConvergenceCheck::CONVERGED)
+         {
+            printf("Not converged.\n");
+         }
       }
 
       IpData().TimingStats().OutputIteration().Start();
