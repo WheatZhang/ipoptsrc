@@ -349,18 +349,14 @@ SolverReturn IpoptAlgorithm::Optimize(
          PrintProblemStatistics();
          IpData().TimingStats().PrintProblemStatistics().End();
       }
-      // eq_sys
-      // Number t1_start=0;
-      // Number t2_start=0;
-      // Number t1_target=1;
-      // Number t2_target=0;
-
+      
+      // zhangduo added test example and the homotopy loop
       // wo
-      Number t1_start=1;
-      Number t2_start=1;
-      Number t1_target=2;
-      Number t2_target=2;
-      Number t_step=0.2;
+      Number t1_start=0;
+      Number t2_start=0;
+      Number t1_target=0.5;
+      Number t2_target=0.6;
+      Number t_step=1;
 
       Number total_homotopy_distance = sqrt((t1_target-t1_start)*(t1_target-t1_start)+(t2_target-t2_start)*(t2_target-t2_start));
 
@@ -372,16 +368,17 @@ SolverReturn IpoptAlgorithm::Optimize(
       Number distance_to_target;
       SmartPtr<const Vector> x;
       DenseVector* dx;
+      SmartPtr<IteratesVector> old_successful_homo_trial;
       
-      // zhangduo added the homotopy loop
       bool homotopy_finish_flag=false;
       bool first_iter=true;
       Index count_ = 0;
+      old_successful_homo_trial = IpData().curr()->MakeNewContainer();
       while (!homotopy_finish_flag)
       {
          count_++;
          printf("count=%d.\n",count_);
-         if (count_>20)
+         if (count_>50)
          {
             break;
          }
@@ -423,82 +420,229 @@ SolverReturn IpoptAlgorithm::Optimize(
          //conv_status = ConvergenceCheck::CONTINUE;
          IpData().TimingStats().CheckConvergence().End();
 
-         // main loop
-         while( conv_status == ConvergenceCheck::CONTINUE )
+         try
          {
-            // Set the Hessian Matrix
-            IpData().TimingStats().UpdateHessian().Start();
-            UpdateHessian();
-            IpData().TimingStats().UpdateHessian().End();
-
-            // do all the output for this iteration
-            IpData().TimingStats().OutputIteration().Start();
-            OutputIteration();
-            IpData().ResetInfo();
-            IpData().TimingStats().OutputIteration().End();
-
-            // initialize the flag that is set to true if the algorithm
-            // has to continue with an emergency fallback mode.  For
-            // example, when no search direction can be computed, continue
-            // with the restoration phase
-            bool emergency_mode = false;
-
-            // update the barrier parameter
-            IpData().TimingStats().UpdateBarrierParameter().Start();
-            emergency_mode = !UpdateBarrierParameter();
-            IpData().TimingStats().UpdateBarrierParameter().End();
-
-            if( !emergency_mode )
+            // main loop
+            while( conv_status == ConvergenceCheck::CONTINUE )
             {
-               // solve the primal-dual system to get the full step
-               IpData().TimingStats().ComputeSearchDirection().Start();
-               emergency_mode = !ComputeSearchDirection();
-               IpData().TimingStats().ComputeSearchDirection().End();
+               // zhangduo: the inner loop remains unchanged
+               // Set the Hessian Matrix
+               IpData().TimingStats().UpdateHessian().Start();
+               UpdateHessian();
+               IpData().TimingStats().UpdateHessian().End();
+
+               // do all the output for this iteration
+               IpData().TimingStats().OutputIteration().Start();
+               OutputIteration();
+               IpData().ResetInfo();
+               IpData().TimingStats().OutputIteration().End();
+
+               // initialize the flag that is set to true if the algorithm
+               // has to continue with an emergency fallback mode.  For
+               // example, when no search direction can be computed, continue
+               // with the restoration phase
+               bool emergency_mode = false;
+
+               // update the barrier parameterwhile
+               IpData().TimingStats().UpdateBarrierParameter().Start();
+               emergency_mode = !UpdateBarrierParameter();
+               IpData().TimingStats().UpdateBarrierParameter().End();
+
+               if( !emergency_mode )
+               {
+                  // solve the primal-dual system to get the full step
+                  IpData().TimingStats().ComputeSearchDirection().Start();
+                  emergency_mode = !ComputeSearchDirection();
+                  IpData().TimingStats().ComputeSearchDirection().End();
+               }
+
+               // If we are in the emergency mode, ask the line search object
+               // to go to the fallback options.  If that isn't possible,
+               // issue error message
+               if( emergency_mode )
+               {
+                  if( line_search_->ActivateFallbackMechanism() )
+                  {
+                     Jnlst().Printf(J_WARNING, J_MAIN,
+                                    "WARNING: Problem in step computation; switching to emergency mode.\n");
+                  }
+                  else
+                  {
+                     Jnlst().Printf(J_ERROR, J_MAIN,
+                                    "ERROR: Problem in step computation, but emergency mode cannot be activated.\n");
+                     THROW_EXCEPTION(STEP_COMPUTATION_FAILED, "Step computation failed.");
+                  }
+               }
+
+               // Compute the new iterate
+               IpData().TimingStats().ComputeAcceptableTrialPoint().Start();
+               ComputeAcceptableTrialPoint();
+               IpData().TimingStats().ComputeAcceptableTrialPoint().End();
+
+               // Accept the new iterate
+               IpData().TimingStats().AcceptTrialPoint().Start();
+               AcceptTrialPoint();
+               IpData().TimingStats().AcceptTrialPoint().End();
+
+               IpData().Set_iter_count(IpData().iter_count() + 1);
+
+               IpData().TimingStats().CheckConvergence().Start();
+               conv_status = conv_check_->CheckConvergence();
+               IpData().TimingStats().CheckConvergence().End();
             }
 
-            // If we are in the emergency mode, ask the line search object
-            // to go to the fallback options.  If that isn't possible,
-            // issue error message
-            if( emergency_mode )
-            {
-               if( line_search_->ActivateFallbackMechanism() )
-               {
-                  Jnlst().Printf(J_WARNING, J_MAIN,
-                                 "WARNING: Problem in step computation; switching to emergency mode.\n");
-               }
-               else
-               {
-                  Jnlst().Printf(J_ERROR, J_MAIN,
-                                 "ERROR: Problem in step computation, but emergency mode cannot be activated.\n");
-                  THROW_EXCEPTION(STEP_COMPUTATION_FAILED, "Step computation failed.");
-               }
-            }
-
-            // Compute the new iterate
-            IpData().TimingStats().ComputeAcceptableTrialPoint().Start();
-            ComputeAcceptableTrialPoint();
-            IpData().TimingStats().ComputeAcceptableTrialPoint().End();
-
-            // Accept the new iterate
-            IpData().TimingStats().AcceptTrialPoint().Start();
-            AcceptTrialPoint();
-            IpData().TimingStats().AcceptTrialPoint().End();
-
-            IpData().Set_iter_count(IpData().iter_count() + 1);
-
-            IpData().TimingStats().CheckConvergence().Start();
-            conv_status = conv_check_->CheckConvergence();
-            IpData().TimingStats().CheckConvergence().End();
+            // zhangduo: Prepare for the next homotopy iteration
+            IpCq().ClearHomotopyRelatedCaches();
+            line_search_->Reset();
          }
-         // Prepare for the next homotopy iteration
-         IpCq().ClearHomotopyRelatedCaches();
-         line_search_->Reset();
-
-         if (conv_status != ConvergenceCheck::CONVERGED)
+         catch( TINY_STEP_DETECTED& exc )
          {
-            printf("Not converged.\n");
+            exc.ReportException(Jnlst(), J_MOREDETAILED);
+            IpData().TimingStats().UpdateBarrierParameter().EndIfStarted();
+            retval = STOP_AT_TINY_STEP;
+            conv_status = ConvergenceCheck::FAILED; // zhanduo added. the followings are the same.
+         }
+         catch( ACCEPTABLE_POINT_REACHED& exc )
+         {
+            exc.ReportException(Jnlst(), J_MOREDETAILED);
+            IpData().TimingStats().ComputeAcceptableTrialPoint().EndIfStarted();
+            if( IpCq().IsSquareProblem() )
+            {
+               // make the sure multipliers are computed properly
+               ComputeFeasibilityMultipliers();
+            }
+            retval = STOP_AT_ACCEPTABLE_POINT;
+            conv_status = ConvergenceCheck::FAILED;
+         }
+         catch( LOCALLY_INFEASIBLE& exc )
+         {
+            exc.ReportException(Jnlst(), J_MOREDETAILED);
+            IpData().TimingStats().ComputeAcceptableTrialPoint().EndIfStarted();
+            IpData().TimingStats().CheckConvergence().EndIfStarted();
+            retval = LOCAL_INFEASIBILITY;
+            conv_status = ConvergenceCheck::FAILED;
+         }
+         catch( RESTORATION_CONVERGED_TO_FEASIBLE_POINT& exc )
+         {
+            exc.ReportException(Jnlst(), J_MOREDETAILED);
+            IpData().TimingStats().ComputeAcceptableTrialPoint().EndIfStarted();
+            if( IpCq().IsSquareProblem() )
+            {
+               // make the sure multipliers are computed properly
+               ComputeFeasibilityMultipliers();
+               retval = FEASIBLE_POINT_FOUND;
+            }
+            else
+            {
+               retval = RESTORATION_FAILURE;
+            }
+            conv_status = ConvergenceCheck::FAILED;
+         }
+         catch( RESTORATION_FAILED& exc )
+         {
+            exc.ReportException(Jnlst(), J_MOREDETAILED);
+            IpData().TimingStats().ComputeAcceptableTrialPoint().EndIfStarted();
+            retval = RESTORATION_FAILURE;
+            conv_status = ConvergenceCheck::FAILED;
+         }
+         catch( RESTORATION_MAXITER_EXCEEDED& exc )
+         {
+            exc.ReportException(Jnlst(), J_MOREDETAILED);
+            IpData().TimingStats().ComputeAcceptableTrialPoint().EndIfStarted();
+            retval = MAXITER_EXCEEDED;
+            conv_status = ConvergenceCheck::FAILED;
+         }
+         catch( RESTORATION_CPUTIME_EXCEEDED& exc )
+         {
+            exc.ReportException(Jnlst(), J_MOREDETAILED);
+            IpData().TimingStats().ComputeAcceptableTrialPoint().EndIfStarted();
+            retval = CPUTIME_EXCEEDED;
+            conv_status = ConvergenceCheck::FAILED;
+         }
+         catch( RESTORATION_WALLTIME_EXCEEDED& exc )
+         {
+            exc.ReportException(Jnlst(), J_MOREDETAILED);
+            IpData().TimingStats().ComputeAcceptableTrialPoint().EndIfStarted();
+            retval = WALLTIME_EXCEEDED;
+            conv_status = ConvergenceCheck::FAILED;
+         }
+         catch( RESTORATION_USER_STOP& exc )
+         {
+            exc.ReportException(Jnlst(), J_MOREDETAILED);
+            IpData().TimingStats().ComputeAcceptableTrialPoint().EndIfStarted();
+            retval = USER_REQUESTED_STOP;
+            conv_status = ConvergenceCheck::USER_STOP;
+         }
+         catch( STEP_COMPUTATION_FAILED& exc )
+         {
+            exc.ReportException(Jnlst(), J_MOREDETAILED);
+            IpData().TimingStats().ComputeAcceptableTrialPoint().EndIfStarted();
+            retval = ERROR_IN_STEP_COMPUTATION;
+            conv_status = ConvergenceCheck::FAILED;
+         }
+         catch( IpoptNLP::Eval_Error& exc )
+         {
+            exc.ReportException(Jnlst(), J_MOREDETAILED);
+            IpData().TimingStats().InitializeIterates().EndIfStarted();
+            IpData().TimingStats().ComputeAcceptableTrialPoint().EndIfStarted();
+            retval = INVALID_NUMBER_DETECTED;
+            conv_status = ConvergenceCheck::FATAL_ERROR;
+         }
+         catch( FEASIBILITY_PROBLEM_SOLVED& exc )
+         {
+            exc.ReportException(Jnlst(), J_MOREDETAILED);
+            IpData().TimingStats().ComputeAcceptableTrialPoint().EndIfStarted();
+            if( IpCq().IsSquareProblem() )
+            {
+               // make the sure multipliers are computed properly
+               ComputeFeasibilityMultipliers();
+            }
+            retval = FEASIBLE_POINT_FOUND;
+            conv_status = ConvergenceCheck::FAILED;
+         }
+         catch( TOO_FEW_DOF& exc )
+         {
+            exc.ReportException(Jnlst(), J_MOREDETAILED);
+            IpData().TimingStats().ComputeAcceptableTrialPoint().EndIfStarted();
+            retval = TOO_FEW_DEGREES_OF_FREEDOM;
+            conv_status = ConvergenceCheck::FATAL_ERROR;
+         }
+         catch( INTERNAL_ABORT& exc )
+         {
+            exc.ReportException(Jnlst());
+            retval = INTERNAL_ERROR;
+            conv_status = ConvergenceCheck::FATAL_ERROR;
+         }
+
+         switch( conv_status )
+         {
+            case ConvergenceCheck::CONVERGED:
+            case ConvergenceCheck::CONVERGED_TO_ACCEPTABLE_POINT:
+               printf("Current homotopy value converged.\n");
+               old_successful_homo_trial = IpData().curr()->MakeNewContainer();
+               break;
+            case ConvergenceCheck::MAXITER_EXCEEDED:
+            case ConvergenceCheck::CPUTIME_EXCEEDED:
+            case ConvergenceCheck::WALLTIME_EXCEEDED:
+               printf("Time exceeded.\n");
+               homotopy_finish_flag = true;
+               break;
+            case ConvergenceCheck::DIVERGING:
+            case ConvergenceCheck::FAILED:
+               printf("Current homotopy value failed. Preparing for backtracking.\n");
+               IpData().set_trial(old_successful_homo_trial);
+               IpData().AcceptTrialPoint();
+               IpData().SetHaveAffineDeltas(false);
+               break;
+            case ConvergenceCheck::USER_STOP:
+            case ConvergenceCheck::FATAL_ERROR:
+            default:
+               printf("Interruption occurrs.\n");
+               homotopy_finish_flag = true;
+               break;
          }
       }
+      // zhangduo added ends
 
       IpData().TimingStats().OutputIteration().Start();
       OutputIteration();
@@ -551,98 +695,14 @@ SolverReturn IpoptAlgorithm::Optimize(
          }
       }
    }
-   catch( TINY_STEP_DETECTED& exc )
-   {
-      exc.ReportException(Jnlst(), J_MOREDETAILED);
-      IpData().TimingStats().UpdateBarrierParameter().EndIfStarted();
-      retval = STOP_AT_TINY_STEP;
-   }
-   catch( ACCEPTABLE_POINT_REACHED& exc )
-   {
-      exc.ReportException(Jnlst(), J_MOREDETAILED);
-      IpData().TimingStats().ComputeAcceptableTrialPoint().EndIfStarted();
-      if( IpCq().IsSquareProblem() )
-      {
-         // make the sure multipliers are computed properly
-         ComputeFeasibilityMultipliers();
-      }
-      retval = STOP_AT_ACCEPTABLE_POINT;
-   }
-   catch( LOCALLY_INFEASIBLE& exc )
-   {
-      exc.ReportException(Jnlst(), J_MOREDETAILED);
-      IpData().TimingStats().ComputeAcceptableTrialPoint().EndIfStarted();
-      IpData().TimingStats().CheckConvergence().EndIfStarted();
-      retval = LOCAL_INFEASIBILITY;
-   }
-   catch( RESTORATION_CONVERGED_TO_FEASIBLE_POINT& exc )
-   {
-      exc.ReportException(Jnlst(), J_MOREDETAILED);
-      IpData().TimingStats().ComputeAcceptableTrialPoint().EndIfStarted();
-      if( IpCq().IsSquareProblem() )
-      {
-         // make the sure multipliers are computed properly
-         ComputeFeasibilityMultipliers();
-         retval = FEASIBLE_POINT_FOUND;
-      }
-      else
-      {
-         retval = RESTORATION_FAILURE;
-      }
-   }
-   catch( RESTORATION_FAILED& exc )
-   {
-      exc.ReportException(Jnlst(), J_MOREDETAILED);
-      IpData().TimingStats().ComputeAcceptableTrialPoint().EndIfStarted();
-      retval = RESTORATION_FAILURE;
-   }
-   catch( RESTORATION_MAXITER_EXCEEDED& exc )
-   {
-      exc.ReportException(Jnlst(), J_MOREDETAILED);
-      IpData().TimingStats().ComputeAcceptableTrialPoint().EndIfStarted();
-      retval = MAXITER_EXCEEDED;
-   }
-   catch( RESTORATION_CPUTIME_EXCEEDED& exc )
-   {
-      exc.ReportException(Jnlst(), J_MOREDETAILED);
-      IpData().TimingStats().ComputeAcceptableTrialPoint().EndIfStarted();
-      retval = CPUTIME_EXCEEDED;
-   }
-   catch( RESTORATION_WALLTIME_EXCEEDED& exc )
-   {
-      exc.ReportException(Jnlst(), J_MOREDETAILED);
-      IpData().TimingStats().ComputeAcceptableTrialPoint().EndIfStarted();
-      retval = WALLTIME_EXCEEDED;
-   }
-   catch( RESTORATION_USER_STOP& exc )
-   {
-      exc.ReportException(Jnlst(), J_MOREDETAILED);
-      IpData().TimingStats().ComputeAcceptableTrialPoint().EndIfStarted();
-      retval = USER_REQUESTED_STOP;
-   }
-   catch( STEP_COMPUTATION_FAILED& exc )
-   {
-      exc.ReportException(Jnlst(), J_MOREDETAILED);
-      IpData().TimingStats().ComputeAcceptableTrialPoint().EndIfStarted();
-      retval = ERROR_IN_STEP_COMPUTATION;
-   }
+   // zhangduo moved the try catch block to the inner loop
+   // zhangduo : several catch block remains the same
    catch( IpoptNLP::Eval_Error& exc )
    {
       exc.ReportException(Jnlst(), J_MOREDETAILED);
       IpData().TimingStats().InitializeIterates().EndIfStarted();
       IpData().TimingStats().ComputeAcceptableTrialPoint().EndIfStarted();
       retval = INVALID_NUMBER_DETECTED;
-   }
-   catch( FEASIBILITY_PROBLEM_SOLVED& exc )
-   {
-      exc.ReportException(Jnlst(), J_MOREDETAILED);
-      IpData().TimingStats().ComputeAcceptableTrialPoint().EndIfStarted();
-      if( IpCq().IsSquareProblem() )
-      {
-         // make the sure multipliers are computed properly
-         ComputeFeasibilityMultipliers();
-      }
-      retval = FEASIBLE_POINT_FOUND;
    }
    catch( TOO_FEW_DOF& exc )
    {

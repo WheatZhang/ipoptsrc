@@ -38,7 +38,8 @@ public:
       WALLTIME_EXCEEDED,  ///< @since 3.14.0
       DIVERGING,
       USER_STOP,
-      FAILED
+      FAILED,
+      FATAL_ERROR,  // zhangduo added
    };
 
    /** overloaded from AlgorithmStrategyObject */
