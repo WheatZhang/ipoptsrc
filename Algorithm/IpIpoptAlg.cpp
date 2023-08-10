@@ -356,11 +356,11 @@ SolverReturn IpoptAlgorithm::Optimize(
       // Number t2_target=0;
 
       // wo
-      Number t1_start=1;
-      Number t2_start=1;
-      Number t1_target=2;
-      Number t2_target=2;
-      Number t_step=0.2;
+      Number t1_start=0;
+      Number t2_start=0;
+      Number t1_target=1;
+      Number t2_target=0;
+      Number t_step=0.03;
 
       Number total_homotopy_distance = sqrt((t1_target-t1_start)*(t1_target-t1_start)+(t2_target-t2_start)*(t2_target-t2_start));
 
@@ -381,7 +381,7 @@ SolverReturn IpoptAlgorithm::Optimize(
       {
          count_++;
          printf("count=%d.\n",count_);
-         if (count_>20)
+         if (count_>50)
          {
             break;
          }
