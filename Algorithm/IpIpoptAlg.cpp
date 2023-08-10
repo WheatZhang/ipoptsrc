@@ -354,9 +354,15 @@ SolverReturn IpoptAlgorithm::Optimize(
       // wo
       Number t1_start=0;
       Number t2_start=0;
+<<<<<<< HEAD
       Number t1_target=0.5;
       Number t2_target=0.6;
       Number t_step=1;
+=======
+      Number t1_target=1;
+      Number t2_target=0;
+      Number t_step=0.03;
+>>>>>>> 641e246eddbb89118464fefea02ab56a164cc33e
 
       Number total_homotopy_distance = sqrt((t1_target-t1_start)*(t1_target-t1_start)+(t2_target-t2_start)*(t2_target-t2_start));
 
