@@ -137,6 +137,15 @@ bool IpoptData::InitializeDataStructures(
       return false;
    }
 
+   // zhangduo added
+   retValue = ip_nlp.InitializeHomotopyStructures(t_target_normalized_);
+   printf("initialized homotopy parameters\n");
+   if( !retValue )
+   {
+      return false;
+   }
+   // zhangduo added ends
+
    new_s = new_y_d->MakeNew(); // same dimension as d
 
    iterates_space_ = new IteratesVectorSpace(*(new_x->OwnerSpace()), *(new_s->OwnerSpace()), *(new_y_c->OwnerSpace()),

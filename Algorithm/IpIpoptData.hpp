@@ -370,25 +370,36 @@ public:
       return mu_initialized_;
    }
    // zhangduo added
-   Number curr_homotopy_target1() const
+   SmartPtr<const Vector> t_target_normalized()
    {
-      return curr_homotopy_target1_;
+      DBG_ASSERT(IsValid(t_target_normalized_));
+      return t_target_normalized_;
    }
-   void Set_homotopy_target1(
-      Number homotopy_target1
+   void Set_t_target_normalized(
+      SmartPtr<const Vector> t_target_normalized
    )
    {
-      curr_homotopy_target1_ = homotopy_target1;
+      t_target_normalized_ = t_target_normalized;
    }
-   Number curr_homotopy_target2() const
+   Number homo_L1_weight() const
    {
-      return curr_homotopy_target2_;
+      return homo_L1_weight_;
    }
-   void Set_homotopy_target2(
-      Number homotopy_target2
+   void Set_homo_L1_weight(
+      Number weight
    )
    {
-      curr_homotopy_target2_ = homotopy_target2;
+      homo_L1_weight_ = weight;
+   }
+   Number homo_L2_weight() const
+   {
+      return homo_L2_weight_;
+   }
+   void Set_homo_L2_weight(
+      Number weight
+   )
+   {
+      homo_L2_weight_ = weight;
    }
    // zhangduo added ends
 
@@ -713,14 +724,15 @@ private:
    /** iteration count */
    Index iter_count_;
 
+   // zhangduo added
+   SmartPtr<Vector> t_target_normalized_;
+   Number homo_L1_weight_;
+   Number homo_L2_weight_;
+   // zhangduo added ends
+
    /** current barrier parameter */
    Number curr_mu_;
    bool mu_initialized_;
-
-   // zhangduo added
-   Number curr_homotopy_target1_;
-   Number curr_homotopy_target2_;
-   // zhangduo added ends
 
    /** current fraction to the boundary parameter */
    Number curr_tau_;

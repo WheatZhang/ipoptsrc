@@ -385,24 +385,149 @@ bool AmplTNLP::get_nlp_info(
 
    index_style = TNLP::FORTRAN_STYLE;
 
-   //zhangduo added
-   //test suffix interface
-   const Number* homo_begin = suffix_handler_->GetNumberSuffixValues("homotopy_begin", AmplSuffixHandler::Variable_Source);
-   for( Index i = 0; i < n; i++ )
-   {
-      if (homo_begin[i] == NULL) 
-      {
-         printf("i=%d, homo_begin[i] == NULL\n", i);
-      }
-      else
-      {
-         printf("i=%d, homo_begin[i]=%f\n", i, homo_begin[i]);
-      }
-   }
-   //zhangduo added end
-
    return true;
 }
+
+// zhangduo added
+bool AmplTNLP::get_nlp_t_length(
+   Index&          n_t
+)
+{
+   ASL_pfgh* asl = asl_;
+   DBG_ASSERT(asl);
+
+   DBG_ASSERT(IsValid(suffix_handler_));
+   const Index* homo_idx =  suffix_handler_->GetIntegerSuffixValues("homotopy_var_id", AmplSuffixHandler::Variable_Source);
+         
+   Index n_t_full_var=0;
+   for ( Index i = 0; i < n_var; i++ )
+   {
+      // caution: homotopy variable id begins at 1, not 0!
+      if (homo_idx[i] != NULL) 
+      {
+         n_t_full_var++;
+      }
+   }
+   printf("number of homotopy variables = %d\n", n_t_full_var);
+   n_t = n_t_full_var;
+   return true;
+}
+
+bool AmplTNLP::get_homotopy_info(
+   Index   n_t,
+   Number* t_ori, 
+   Number* t_dest
+)
+{
+   ASL_pfgh* asl = asl_;
+   DBG_ASSERT(asl);
+
+   const Index* homo_idx =  suffix_handler_->GetIntegerSuffixValues("homotopy_var_id", AmplSuffixHandler::Variable_Source);
+   const Number* homo_begin =  suffix_handler_->GetNumberSuffixValues("homotopy_origin", AmplSuffixHandler::Variable_Source);
+   const Number* homo_end = suffix_handler_->GetNumberSuffixValues("homotopy_destination", AmplSuffixHandler::Variable_Source);
+   
+   Index homo_variable_count=0;
+   for ( Index i = 0; i < n_var; i++ )
+   {
+      // caution: homotopy variable id begins at 1, not 0!
+      if (homo_idx[i] != NULL)
+      {
+         t_ori[homo_idx[i]-1] = homo_begin[i];
+         t_dest[homo_idx[i]-1] = homo_end[i];
+         homo_variable_count++;
+         printf("homo_idx=%d, t_ori[i]=%f\n", homo_idx[i], t_ori[i]);
+         printf("homo_idx=%d, t_dest[i]=%f\n", homo_idx[i], t_dest[i]);
+      }
+   }
+   DBG_ASSERT(homo_variable_count == n_t);
+   return true;
+}
+
+bool AmplTNLP::get_t_and_r_map(
+   Index   n_t,
+   Index*  t_index_map, 
+   Index*  r_index_map, 
+   Index*  r_ub_con_map, 
+   Index*  r_lb_con_map
+)
+{
+   ASL_pfgh* asl = asl_;
+   DBG_ASSERT(asl);
+
+   const Index* homo_idx =  suffix_handler_->GetIntegerSuffixValues("homotopy_var_id", AmplSuffixHandler::Variable_Source);
+   const Number* r_idx =  suffix_handler_->GetIntegerSuffixValues("homotopy_L1_slack_id", AmplSuffixHandler::Variable_Source);
+   const Index* L1_ub_con_idx = suffix_handler_->GetIntegerSuffixValues("homotopy_L1_ub_id", AmplSuffixHandler::Constraint_Source);
+   const Index* L1_lb_con_idx = suffix_handler_->GetIntegerSuffixValues("homotopy_L1_lb_id", AmplSuffixHandler::Constraint_Source);
+
+   Index homo_variable_count;
+   
+   homo_variable_count = 0;
+   for ( Index i = 0; i < n_var; i++ )
+   {
+      // caution: homotopy variable id begins at 1, not 0!
+      if (homo_idx[i] != NULL)
+      {
+         t_index_map[homo_idx[i]-1] = i;
+         homo_variable_count++;
+      }
+   }
+   DBG_ASSERT(homo_variable_count == n_t);
+   for ( Index i = 0; i < n_t; i++ )
+   {
+      printf("t_index_map[%d]=%d\n", i, t_index_map[i]);
+   }
+
+   homo_variable_count = 0;
+   for ( Index i = 0; i < n_var; i++ )
+   {
+      // caution: homotopy variable id begins at 1, not 0!
+      if (r_idx[i] != NULL)
+      {
+         r_index_map[r_idx[i]-1] = i;
+         homo_variable_count++;
+      }
+   }
+   DBG_ASSERT(homo_variable_count == n_t);
+   for ( Index i = 0; i < n_t; i++ )
+   {
+      printf("r_index_map[%d]=%d\n", i, r_index_map[i]);
+   }
+
+   homo_variable_count = 0;
+   for ( Index i = 0; i < n_con; i++ )
+   {
+      // caution: homotopy variable id begins at 1, not 0!
+      if (L1_ub_con_idx[i] != NULL)
+      {
+         r_ub_con_map[r_idx[i]-1] = i;
+         homo_variable_count++;
+      }
+   }
+   DBG_ASSERT(homo_variable_count == n_t);
+   for ( Index i = 0; i < n_t; i++ )
+   {
+      printf("r_ub_con_map[%d]=%d\n", i, r_ub_con_map[i]);
+   }
+
+   homo_variable_count = 0;
+   for ( Index i = 0; i < n_con; i++ )
+   {
+      // caution: homotopy variable id begins at 1, not 0!
+      if (L1_lb_con_idx[i] != NULL)
+      {
+         r_lb_con_map[r_idx[i]-1] = i;
+         homo_variable_count++;
+      }
+   }
+   DBG_ASSERT(homo_variable_count == n_t);
+   for ( Index i = 0; i < n_t; i++ )
+   {
+      printf("r_lb_con_map[%d]=%d\n", i, r_lb_con_map[i]);
+   }
+            
+   return true;
+}
+// zhangduo added ends
 
 bool AmplTNLP::get_var_con_metadata(
    Index                   n,

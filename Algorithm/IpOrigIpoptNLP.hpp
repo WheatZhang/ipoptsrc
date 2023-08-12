@@ -101,6 +101,12 @@ public:
       SmartPtr<Vector>& v_U
    );
 
+   // zhangduo added
+   virtual bool InitializeHomotopyStructures(
+      SmartPtr<Vector>& homotopy_target_normalized
+   );
+   // zhangduo added ends
+
    /** Method accessing the GetWarmStartIterate of the NLP */
    virtual bool GetWarmStartIterate(
       IteratesVector& warm_start_iterate
@@ -206,6 +212,37 @@ public:
    {
       return orig_x_L_;
    }
+
+   // zhangduo added
+   virtual SmartPtr<const Matrix> P_t() const
+   {
+      return P_t_;
+   }
+   virtual SmartPtr<const Matrix> P_r() const
+   {
+      return P_r_;
+   }
+   virtual SmartPtr<const Matrix> P_r_ub_con() const
+   {
+      return P_r_ub_con_;
+   }
+   virtual SmartPtr<const Matrix> P_r_lb_con() const
+   {
+      return P_r_lb_con_;
+   }
+   virtual SmartPtr<const Vector> t_destination() const
+   {
+      return t_destination_;
+   }
+   virtual SmartPtr<const Vector> t_origin() const
+   {
+      return t_origin_;
+   }
+   virtual SmartPtr<const VectorSpace> t_space() const
+   {
+      return t_space_;
+   }
+   // zhangduo added ends
 
    /** Upper bounds on x */
    virtual SmartPtr<const Vector> x_U() const
@@ -394,6 +431,14 @@ private:
    SmartPtr<const MatrixSpace> scaled_jac_c_space_;
    SmartPtr<const MatrixSpace> scaled_jac_d_space_;
    SmartPtr<const SymMatrixSpace> scaled_h_space_;
+
+   // zhangduo added
+   SmartPtr<const MatrixSpace> p_t_space_;
+   SmartPtr<const MatrixSpace> p_r_space_;
+   SmartPtr<const MatrixSpace> p_r_ub_con_space_;
+   SmartPtr<const MatrixSpace> p_r_lb_con_space_;
+   SmartPtr<const VectorSpace> t_space_;
+   // zhangduo added ends
    ///@}
 
    /**@name Storage for Model Quantities */
@@ -459,6 +504,15 @@ private:
 
    /** Original unmodified upper bounds on x */
    SmartPtr<const Vector> orig_x_U_;
+
+   // zhangduo added
+   SmartPtr<const Matrix> P_t_;
+   SmartPtr<const Matrix> P_r_;
+   SmartPtr<const Matrix> P_r_ub_con_;
+   SmartPtr<const Matrix> P_r_lb_con_;
+   SmartPtr<const Vector> t_origin_;
+   SmartPtr<const Vector> t_destination_;
+   // zhangduo added ends
    ///@}
 
    /**@name Default Compiler Generated Methods

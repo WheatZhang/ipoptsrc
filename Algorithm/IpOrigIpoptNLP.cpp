@@ -445,6 +445,76 @@ bool OrigIpoptNLP::InitializeStructures(
    return true;
 }
 
+// zhangduo added
+bool InitializeHomotopyStructures(
+   SmartPtr<Vector>& homotopy_target_normalized
+)
+{
+   DBG_START_METH("OrigIpoptNLP::InitializeHomotopyStructures", dbg_verbosity);
+   DBG_ASSERT(initialized_);
+   bool retValue;
+
+   // declare class variable related vector and matrix
+   SmartPtr<Matrix> P_t;
+   SmartPtr<Matrix> P_r;
+   SmartPtr<Matrix> P_r_ub_con;
+   SmartPtr<Matrix> P_r_lb_con;
+   SmartPtr<Vector> t_origin;
+   SmartPtr<Vector> t_destination;
+
+   if( !warm_start_same_structure_ )
+   {
+      
+      // get homotopy spaces
+      retValue = nlp_->GetHomotopySpaces(p_t_space_, p_r_space_, p_r_ub_con_space_, p_r_lb_con_space_, 
+                              t_space_);
+      if( !retValue )
+      {
+         jnlst_->Printf(J_WARNING, J_INITIALIZATION, "GetHomotopySpaces method for the NLP returns false.\n");
+         return false;
+      }
+
+      // Create the bounds structures
+      P_t = p_t_space_->MakeNew();
+      P_r = p_r_space_->MakeNew();
+      P_r_ub_con = p_r_ub_con_space_->MakeNew();
+      P_r_lb_con = p_r_lb_con_space_->MakeNew();
+      t_origin = t_space_->MakeNew();
+      t_destination = t_space_->MakeNew();
+
+      retValue = nlp_->GetHomotopyInformation(*t_origin, *t_destination);
+      if( !retValue )
+      {
+         jnlst_->Printf(J_WARNING, J_INITIALIZATION, "GetHomotopyInformation method for the NLP returns false.\n");
+         return false;
+      }
+   }
+   else{
+      THROW_EXCEPTION(INTERNAL_ABORT, "ERROR: warm start not implemented");
+   }
+
+   // to ConstPtr
+   P_t_ = ConstPtr(P_t);
+   P_r_ = ConstPtr(P_r);
+   P_r_ub_con_ = ConstPtr(P_r_ub_con);
+   P_r_lb_con_ = ConstPtr(P_r_lb_con);
+   t_origin_ = ConstPtr(t_origin);
+   t_destination_ = ConstPtr(t_destination);
+   
+   // get scaled homotopy origin and destination
+   t_origin_ = NLP_scaling()->apply_vector_scaling_x_LU(*P_t_, t_origin_, *x_space_);
+   t_destination_ = NLP_scaling()->apply_vector_scaling_x_LU(*P_t_, t_destination_, *x_space_);
+
+   t_origin_->Print(*jnlst_, J_VECTOR, J_INITIALIZATION, "modified t_origin_ scaled");
+   t_destination_->Print(*jnlst_, J_VECTOR, J_INITIALIZATION, "modified t_destination_ scaled");
+
+   // initialize homotopy target
+   homotopy_target_normalized->Set(0)
+
+   return true;
+}
+// zhangduo added ends
+
 void OrigIpoptNLP::relax_bounds(
    Number  bound_relax_factor,
    Vector& bounds

@@ -105,6 +105,33 @@ public:
    ) = 0;
    // [TNLP_get_nlp_info]
 
+   // zhangduo added
+   virtual bool get_nlp_t_length(
+      Index&          n_t
+   )
+   {
+      return false;
+   }
+   virtual bool get_homotopy_info(
+      Index   n_t,
+      Number* t_ori, 
+      Number* t_dest
+   )
+   {
+      return false;
+   }
+   virtual bool get_t_and_r_map(
+      Index   n_t,
+      Index*  t_index_map, 
+      Index*  r_index_map, 
+      Index*  r_ub_con_map, 
+      Index*  r_lb_con_map
+   )
+   {
+      return false;
+   }
+   // zhangduo added ends
+
    /** Method to request meta data for the variables and the constraints.
     *
     * This method is used to pass meta data about variables or constraints to

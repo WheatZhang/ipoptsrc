@@ -84,8 +84,19 @@ int main(
                                       AmplSuffixHandler::Number_Type);
 
    // zhangduo added
-   suffix_handler->AddAvailableSuffix("homotopy_begin", AmplSuffixHandler::Variable_Source,
+   suffix_handler->AddAvailableSuffix("homotopy_var_id", AmplSuffixHandler::Variable_Source,
+                                      AmplSuffixHandler::Index_Type);
+   suffix_handler->AddAvailableSuffix("homotopy_origin", AmplSuffixHandler::Variable_Source,
                                       AmplSuffixHandler::Number_Type);
+   suffix_handler->AddAvailableSuffix("homotopy_destination", AmplSuffixHandler::Variable_Source,
+                                      AmplSuffixHandler::Number_Type);
+   suffix_handler->AddAvailableSuffix("homotopy_L1_slack_id", AmplSuffixHandler::Variable_Source,
+                                      AmplSuffixHandler::Index_Type);
+   suffix_handler->AddAvailableSuffix("homotopy_L1_ub_id", AmplSuffixHandler::Constraint_Source,
+                                      AmplSuffixHandler::Index_Type);
+   suffix_handler->AddAvailableSuffix("homotopy_L1_lb_id", AmplSuffixHandler::Constraint_Source,
+                                      AmplSuffixHandler::Index_Type);
+   // zhangduo added ends
 
    SmartPtr<TNLP> ampl_tnlp = new AmplTNLP(ConstPtr(app->Jnlst()), app->RegOptions(), app->Options(), args, suffix_handler);
 

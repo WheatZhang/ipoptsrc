@@ -228,6 +228,15 @@ bool IpoptCalculatedQuantities::Initialize(
    num_adjusted_slack_s_L_ = 0;
    num_adjusted_slack_s_U_ = 0;
 
+   // zhangduo added
+   t_range_ = ip_nlp_->t_space()->MakeNew();
+   t_range_inv_ = ip_nlp_->t_space()->MakeNew();
+   t_range_->Copy(*(ip_nlp_->t_origin()))
+   t_range_->AddOneVector(1.0, *(ip_nlp_->t_origin()), -1.0);
+   t_range_inv_->Set(1.0);
+   t_range_inv_->ElementWiseMultiply(*t_range_);
+   // zhangduo added ends
+
    initialize_called_ = true;
 
    bool retval = true;
@@ -585,11 +594,10 @@ Number IpoptCalculatedQuantities::curr_f()
       sdeps[0] = -1.;
    }
 
-   // zhangduo comment the cache reading
-   //if( !curr_f_cache_.GetCachedResult(result, tdeps, sdeps) )
-   //{
-      //if( !trial_f_cache_.GetCachedResult(result, tdeps, sdeps) )
-      //{
+   if( !curr_f_cache_.GetCachedResult(result, tdeps, sdeps) )
+   {
+      if( !trial_f_cache_.GetCachedResult(result, tdeps, sdeps) )
+      {
          DBG_PRINT((2, "evaluate curr f\n"));
          if( objective_depends_on_mu )
          {
@@ -599,17 +607,19 @@ Number IpoptCalculatedQuantities::curr_f()
          {
             result = ip_nlp_->f(*x);
          }
-      //}
-      //curr_f_cache_.AddCachedResult(result, tdeps, sdeps);
-   //}
+      }
+      curr_f_cache_.AddCachedResult(result, tdeps, sdeps);
+   }
    DBG_PRINT((1, "result (curr_f) = %e\n", result));
    
    // zhangduo added
-   DenseVector* dx = static_cast<DenseVector*>(const_cast<Vector*> (GetRawPtr(x)));
-   result = result + HOMO_COEFF*(dx->Values()[HOMO_VAR_INDEX1]-ip_data_->curr_homotopy_target1())*\
-            (dx->Values()[HOMO_VAR_INDEX1]-ip_data_->curr_homotopy_target1())+\
-            HOMO_COEFF*(dx->Values()[HOMO_VAR_INDEX2]-ip_data_->curr_homotopy_target2())*\
-            (dx->Values()[HOMO_VAR_INDEX2]-ip_data_->curr_homotopy_target2());
+   Number homotopy_penalty = 0.0;
+   SmartPtr<const Vector> tmp = ip_nlp_->t_space()->MakeNew();
+   tmp->Copy(*curr_r_normalized());
+   homotopy_penalty += tmp.Asum() * ip_data_->homo_L1_weight();
+   tmp->AddTwoVectors(1.0, *(ip_data_->t_target_normalized()), -1.0, *curr_t_normalized(), 0.0);
+   homotopy_penalty += tmp->Dot(*tmp) * ip_data_->homo_L2_weight();
+   result = result + homotopy_penalty;
    // zhangduo added ends
 
    return result;
@@ -687,11 +697,10 @@ SmartPtr<const Vector> IpoptCalculatedQuantities::curr_grad_f()
       sdeps[0] = -1.;
    }
 
-   // zhangduo comment the cache reading
-   //if( !curr_grad_f_cache_.GetCachedResult(result, tdeps, sdeps) )
-   //{
-      //if( !trial_grad_f_cache_.GetCachedResult(result, tdeps, sdeps) )
-      //{
+   if( !curr_grad_f_cache_.GetCachedResult(result, tdeps, sdeps) )
+   {
+      if( !trial_grad_f_cache_.GetCachedResult(result, tdeps, sdeps) )
+      {
          if( objective_depends_on_mu )
          {
             result = ip_nlp_->grad_f(*x, ip_data_->curr_mu());
@@ -700,23 +709,20 @@ SmartPtr<const Vector> IpoptCalculatedQuantities::curr_grad_f()
          {
             result = ip_nlp_->grad_f(*x);
          }
-      //}
-      //curr_grad_f_cache_.AddCachedResult(result, tdeps, sdeps);
-   //}
+      }
+      curr_grad_f_cache_.AddCachedResult(result, tdeps, sdeps);
+   }
+   
    // zhangduo added and modified return value
-   Number added_quantity;
-   DenseVector* dx = static_cast<DenseVector*>(const_cast<Vector*> (GetRawPtr(x)));
-   DenseVector* d_result = static_cast<DenseVector*>(const_cast<Vector*> (GetRawPtr(result)));
-
-   added_quantity = 2*HOMO_COEFF*(dx->Values()[HOMO_VAR_INDEX1]-ip_data_->curr_homotopy_target1());
-   d_result->Values()[HOMO_VAR_INDEX1]=d_result->Values()[HOMO_VAR_INDEX1]+added_quantity;
-   added_quantity = 2*HOMO_COEFF*(dx->Values()[HOMO_VAR_INDEX2]-ip_data_->curr_homotopy_target2());
-   d_result->Values()[HOMO_VAR_INDEX2]=d_result->Values()[HOMO_VAR_INDEX2]+added_quantity;
-   //for(Index i=0;i<=2;i++)
-   //{
-   //   printf("d_result->Values()[%d]=%f\n",i,d_result->Values()[i]); // seems good
-   //}
-   SmartPtr<const Vector> result_added=d_result;
+   SmartPtr<const Vector> tmp = ip_nlp_->t_space()->MakeNew();
+   SmartPtr<const Vector> result_added = ip_nlp_->x_space()->MakeNew();
+   tmp->AddTwoVectors(1.0, *(ip_data_->t_target_normalized()), -1.0, *curr_t_normalized(), 0.0);
+   tmp->ElementWiseMultiply(*t_range_inv_);
+   tmp->Scal(2*ip_data_->homo_L2_weight);
+   ip_nlp_->P_t()->MultVector(1.0, *tmp, 0.0, *result_added);
+   tmp->Copy(*t_range_inv_);
+   ip_nlp_->P_r()->MultVector(1.0, *tmp, 1.0*ip_data_->homo_L1_weight, *result_added);
+   result_added->AddOneVector(1.0, *result, 1.0);
    
    return result_added;
    // zhangduo added ends
@@ -1126,6 +1132,75 @@ void IpoptCalculatedQuantities::ComputeDampingIndicators(
    dampind_s_U = ConstPtr(dampind_s_U_);
 }
 
+// zhangduo added
+///////////////////////////////////////////////////////////////////////////
+//                                Homotopy                               //
+///////////////////////////////////////////////////////////////////////////
+SmartPtr<const Vector> IpoptCalculatedQuantities::curr_t_normalized()
+{
+   DBG_START_METH("IpoptCalculatedQuantities::curr_t_normalized()",
+                  dbg_verbosity);
+   SmartPtr<const Vector> result = ip_nlp_->t_space()->MakeNew();
+   SmartPtr<const Vector> x = ip_data_->curr()->x();
+
+   if( !curr_t_normalized_cache_.GetCachedResult1Dep(result, *x) )
+   {
+      ip_nlp_->P_t()->TransMultVector(1.0, *x, 0.0, *result);
+      result->ElementWiseMultiply(*t_range_inv_);
+      curr_t_normalized_cache_.AddCachedResult1Dep(result, *x);
+   }
+   return result;
+}
+
+SmartPtr<const Vector> IpoptCalculatedQuantities::curr_t()
+{
+   DBG_START_METH("IpoptCalculatedQuantities::curr_t()",
+                  dbg_verbosity);
+   SmartPtr<const Vector> result = ip_nlp_->t_space()->MakeNew();
+   SmartPtr<const Vector> x = ip_data_->curr()->x();
+
+   if( !curr_t_cache_.GetCachedResult1Dep(result, *x) )
+   {
+      ip_nlp_->P_t()->TransMultVector(1.0, *x, 0.0, *result);
+      curr_t_cache_.AddCachedResult1Dep(result, *x);
+   }
+   return result;
+}
+
+SmartPtr<const Vector> IpoptCalculatedQuantities::t_target_denormalized()
+{
+   DBG_START_METH("IpoptCalculatedQuantities::t_target_denormalized()",
+                  dbg_verbosity);
+   SmartPtr<const Vector> t_target_normalized = ip_data_->t_target_normalized();
+   SmartPtr<const Vector> result = ip_nlp_->t_space()->MakeNew();
+
+   if( !t_target_denormalized_cache_.GetCachedResult1Dep(result, *t_target_normalized) )
+   {
+      result->Copy(*t_target_normalized)
+      result->ElementWiseMultiply(*t_range_);
+      t_target_denormalized_cache_.AddCachedResult1Dep(result, *t_target_normalized);
+   }
+   return result;
+}
+
+SmartPtr<const Vector> IpoptCalculatedQuantities::curr_r_normalized()
+{
+   DBG_START_METH("IpoptCalculatedQuantities::curr_r_normalized()",
+                  dbg_verbosity);
+   SmartPtr<const Vector> result = ip_nlp_->t_space()->MakeNew();
+   SmartPtr<const Vector> x = ip_data_->curr()->x();
+
+   if( !curr_r_normalized_cache_.GetCachedResult1Dep(result, *x) )
+   {
+      ip_nlp_->P_r()->TransMultVector(1.0, *x, 0.0, *result);
+      result->ElementWiseMultiply(*t_range_inv_);
+      curr_r_normalized_cache_.AddCachedResult1Dep(result, *x);
+   }
+   return result;
+}
+
+// zhangduo added ends
+
 ///////////////////////////////////////////////////////////////////////////
 //                                Constraints                            //
 ///////////////////////////////////////////////////////////////////////////
@@ -1191,7 +1266,17 @@ SmartPtr<const Vector> IpoptCalculatedQuantities::curr_d()
       }
       curr_d_cache_.AddCachedResult1Dep(result, *x);
    }
-   return result;
+   
+   // zhangduo added and modified the return value
+   SmartPtr<const Vector> t_target = ip_nlp_->t_space()->MakeNew();
+   SmartPtr<const Vector> result_added = result->MakeNew();
+   t_target.Copy(*(ip_data_->t_target_normalized()));
+   result_added->Set(0.0);
+   ip_nlp_->P_r_ub_con()->MultVector(1.0, *t_target, 1.0, *result);
+   ip_nlp_->P_r_lb_con()->MultVector(-1.0, *t_target, 1.0, *result_added);
+
+   return result_added;
+   // zhangduo added ends
 }
 
 SmartPtr<const Vector> IpoptCalculatedQuantities::unscaled_curr_d()
@@ -2020,20 +2105,25 @@ SmartPtr<const SymMatrix> IpoptCalculatedQuantities::curr_exact_hessian()
    //}
    // zhangduo added
    SymTMatrix* s_result = static_cast<SymTMatrix*>(const_cast<SymMatrix*> (GetRawPtr(result)));
+   DenseVector* d_t_scaling = static_cast<DenseVector*>(GetRawPtr(t_range_inv_));
+   Number* d_t_scaling_values = d_t_scaling->Values();
+   SmartPtr<const ExpansionMatrix> P_t = ip_nlp_->P_t();
+   const ExpansionMatrix* em_P_t = static_cast<const ExpansionMatrix*>(&P_t);
    for( Index i = 0; i < s_result->Nonzeros(); i++ )
    {
       // index in irow and jcol starts from 1 not 0
-      if((s_result->Irows()[i] == HOMO_VAR_INDEX1+1) && (s_result->Jcols()[i] == HOMO_VAR_INDEX1+1))
+      if(s_result->Irows()[i] == s_result->Jcols()[i])
       {
-         s_result->Values()[i] = s_result->Values()[i] + 2*HOMO_COEFF;
-         //printf("modified hessian at %d,%d\n", i, i);
-         //printf("s_result->Values()[i] %f\n", s_result->Values()[i]); // Good
-      }
-      if((s_result->Irows()[i] == HOMO_VAR_INDEX2+1) && (s_result->Jcols()[i] == HOMO_VAR_INDEX2+1))
-      {
-         s_result->Values()[i] = s_result->Values()[i] + 2*HOMO_COEFF;
-         //printf("modified hessian at %d,%d\n", i, i);
-         //printf("s_result->Values()[i] %f\n", s_result->Values()[i]); // Good
+         for( Index j = 0; j< P_t.NCols(); j++ )
+         {
+            const Index& ipopt_idx = em_P_t->ExpandedPosIndices()[j];
+            if (s_result->Irows()[i] == j+1)
+            {
+               s_result->Values()[i] += 2*d_t_scaling_values[i]*d_t_scaling_values[i]*
+                        ip_data_->homo_L2_weight();
+               break;
+            }
+         }
       }
    }
    SmartPtr<const SymMatrix> result_added=s_result;
