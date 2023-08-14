@@ -11,14 +11,14 @@ void HomotopyUpdate::RegisterOptions(
    roptions->SetRegisteringCategory("Homotopy Update");
 
    roptions->AddNumberOption(
-        "homotopy_l1_term_coeff_",
+        "homotopy_l1_term_coeff",
         "Coefficient before the L1 homotopy penalty term.",
         100.,
         "This is the long describie. Line 1."
         "This is the long describie. Line 2.");
 
    roptions->AddNumberOption(
-        "homotopy_l2_term_coeff_",
+        "homotopy_l2_term_coeff",
         "Coefficient before the L2 homotopy penalty term.",
         100.,
         "This is the long describie. Line 1."
@@ -39,8 +39,8 @@ bool HomotopyUpdate::InitializeImpl(
 {
    first_iter_ = true;
    homotopy_finish_flag = false;
-   options.GetNumericValue("homotopy_term_coeff", homotopy_l1_term_coeff_, prefix);
-   options.GetNumericValue("homotopy_term_coeff", homotopy_l2_term_coeff_, prefix);
+   options.GetNumericValue("homotopy_l1_term_coeff", homotopy_l1_term_coeff_, prefix);
+   options.GetNumericValue("homotopy_l2_term_coeff", homotopy_l2_term_coeff_, prefix);
    options.GetNumericValue("homotopy_stepsize", homotopy_stepsize_, prefix);
    IpData().Set_homo_L1_weight(homotopy_l1_term_coeff_);
    IpData().Set_homo_L1_weight(homotopy_l2_term_coeff_);
