@@ -88,6 +88,15 @@ public:
       SmartPtr<Vector>& v_U
    ) = 0;
 
+   // zhangduo added
+   virtual bool InitializeHomotopyStructures(
+      SmartPtr<Vector>& homotopy_target_normalized
+   )
+   {
+      return false;
+   }
+   // zhangduo added ends
+
    /** Method accessing the GetWarmStartIterate of the NLP */
    virtual bool GetWarmStartIterate(
       IteratesVector& warm_start_iterate
@@ -161,6 +170,12 @@ public:
 
    /** x_space */
    virtual SmartPtr<const VectorSpace> x_space() const = 0;
+
+   // zhangduo added
+   virtual SmartPtr<const VectorSpace> t_space() const 
+   {
+      return NULL;
+   }; 
 
    /** Accessor method to obtain the MatrixSpace for the Hessian
     *  matrix (or it's approximation)

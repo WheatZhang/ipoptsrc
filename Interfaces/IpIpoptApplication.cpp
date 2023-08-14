@@ -386,6 +386,20 @@ void IpoptApplication::RegisterOptions(
       "NOTE: This option only works when read from the ipopt.opt options file! "
       "Determines the verbosity level for the file specified by \"output_file\". "
       "By default it is the same as \"print_level\".");
+   // zhangduo added
+   roptions->AddStringOption1(
+      "homotopy_output_file",
+      "File name of homotopy output file (leave unset for no file output).",
+      "",
+      "*", "Any acceptable standard file name",
+      "An output file with this name will be written (leave unset for no file output). ");
+   roptions->AddBoundedIntegerOption(
+      "homotopy_print_level",
+      "Verbosity level for homotopy output file.",
+      0, J_LAST_LEVEL - 1,
+      J_ITERSUMMARY,
+      "By default it is the same as \"print_level\".");
+   // zhangduo added ends
    roptions->AddBoolOption(
       "print_user_options",
       "Print all options set by the user.",
@@ -963,6 +977,31 @@ bool IpoptApplication::OpenOutputFile(
 
    return true;
 }
+
+// zhangduo added
+bool IpoptApplication::OpenHomotopyOutputFile(
+   std::string   file_name,
+   EJournalLevel print_level
+)
+{
+   SmartPtr<Journal> file_jrnl = jnlst_->GetJournal("OutputFile:" + file_name);
+
+   if( IsNull(file_jrnl) )
+   {
+      file_jrnl = jnlst_->AddFileJournal("OutputFile:" + file_name, file_name.c_str(), J_NONE);
+   }
+
+   // Check, if the output file could be created properly
+   if( IsNull(file_jrnl) )
+   {
+      return false;
+   }
+
+   file_jrnl->SetPrintLevel(J_HOMOTOPY, print_level);
+
+   return true;
+}
+// zhangduo added ends
 
 void IpoptApplication::RegisterAllIpoptOptions(
    const SmartPtr<RegisteredOptions>& roptions

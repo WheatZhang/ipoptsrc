@@ -184,6 +184,13 @@ public:
       EJournalLevel print_level
    );
 
+   // zhangduo added
+   virtual bool OpenHomotopyOutputFile(
+      std::string  file_name,
+      EJournalLevel print_level
+   );
+   // zhangduo added ends
+
    /**@name Accessor methods */
    ///@{
    /** Get the Journalist for printing output */

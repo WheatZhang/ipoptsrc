@@ -81,7 +81,7 @@ enum EJournalCategory
    J_USER14,           /**< This can be used by the user's application*/
    J_USER15,           /**< This can be used by the user's application*/
    J_USER16,           /**< This can be used by the user's application*/
-   J_USER17,           /**< This can be used by the user's application*/
+   J_HOMOTOPY,         // zhangduo added
    J_LAST_CATEGORY
 };
 ///@}

@@ -90,6 +90,27 @@ public:
       SmartPtr<const SymMatrixSpace>& Hess_lagrangian_space
    ) = 0;
 
+   // zhangduo added
+   virtual bool GetHomotopySpaces(
+      SmartPtr<const MatrixSpace>&    pt_space,
+      SmartPtr<const MatrixSpace>&    pr_space,
+      SmartPtr<const MatrixSpace>&    pr_ub_con_space,
+      SmartPtr<const MatrixSpace>&    pr_lb_con_space,
+      SmartPtr<const VectorSpace>&    t_space
+   )
+   {
+      return false;
+   }
+
+   virtual bool GetHomotopyInformation(
+      Vector&       t_ori,
+      Vector&       t_dest
+   )
+   {
+      return false;
+   }
+   // zhangduo added ends
+
    /** Method for obtaining the bounds information. */
    virtual bool GetBoundsInformation(
       const Matrix& Px_L,

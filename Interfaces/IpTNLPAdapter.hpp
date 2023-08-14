@@ -80,6 +80,7 @@ public:
    /**@name Exceptions */
    ///@{
    DECLARE_STD_EXCEPTION(INVALID_TNLP);
+   DECLARE_STD_EXCEPTION(HOMOTOPY_TNLP_NOT_WELL_PREPARED); // zhangduo added
    DECLARE_STD_EXCEPTION(ERROR_IN_TNLP_DERIVATIVE_TEST);
    ///@}
 
@@ -110,6 +111,21 @@ public:
       SmartPtr<const MatrixSpace>&    Jac_d_space,
       SmartPtr<const SymMatrixSpace>& Hess_lagrangian_space
    );
+
+   // zhangduo added
+   virtual bool GetHomotopySpaces(
+      SmartPtr<const MatrixSpace>&    pt_space,
+      SmartPtr<const MatrixSpace>&    pr_space,
+      SmartPtr<const MatrixSpace>&    pr_ub_con_space,
+      SmartPtr<const MatrixSpace>&    pr_lb_con_space,
+      SmartPtr<const VectorSpace>&    t_space,
+   );
+
+   virtual bool GetHomotopyInformation(
+      Vector&       t_ori,
+      Vector&       t_dest
+   );
+   // zhangduo added ends
 
    /** Method for obtaining the bounds information. */
    virtual bool GetBoundsInformation(
@@ -520,6 +536,11 @@ private:
    Index nz_h_;
    /** Number of fixed variables */
    Index n_x_fixed_;
+   // zhangduo added
+   Index n_full_t_;
+   Index n_t_;
+   Index n_d_;
+   // zhangduo added ends
    ///@}
 
    /** Numbering style of variables and constraints */
@@ -542,6 +563,13 @@ private:
    SmartPtr<const MatrixSpace> Jac_d_space_;
    SmartPtr<const SymMatrixSpace> Hess_lagrangian_space_;
    ///@}
+   // zhangduo added
+   SmartPtr<const MatrixSpace> pt_space_;
+   SmartPtr<const MatrixSpace> pr_space_;
+   SmartPtr<const MatrixSpace> pr_ub_con_space_;
+   SmartPtr<const MatrixSpace> pr_lb_con_space_;
+   SmartPtr<const VectorSpace> t_space_;
+   // zhangduo added ends
 
    /**@name Local Copy of the Data */
    ///@{
@@ -604,6 +632,17 @@ private:
    /** Expansion from d only (ipopt) to full ampl d */
    SmartPtr<ExpansionMatrixSpace> P_d_g_space_;
    SmartPtr<ExpansionMatrix> P_d_g_;
+
+   // zhangduo added
+   SmartPtr<ExpansionMatrixSpace> P_t_x_space_;
+   SmartPtr<ExpansionMatrix> P_t_x_;
+   SmartPtr<ExpansionMatrixSpace> P_r_x_space_;
+   SmartPtr<ExpansionMatrix> P_r_x_;
+   SmartPtr<ExpansionMatrixSpace> P_r_ub_con_d_space_;
+   SmartPtr<ExpansionMatrix> P_r_ub_con_d_;
+   SmartPtr<ExpansionMatrixSpace> P_r_lb_con_d_space_;
+   SmartPtr<ExpansionMatrix> P_r_lb_con_d_;
+   // zhangduo added ends
 
    Index* jac_idx_map_;
    Index* h_idx_map_;

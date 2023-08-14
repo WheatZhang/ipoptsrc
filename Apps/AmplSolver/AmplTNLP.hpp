@@ -390,6 +390,25 @@ public:
       Number* g_l,
       Number* g_u
    );
+   // zhangduo added
+   virtual bool get_nlp_t_length(
+      Index&          n_t
+   );
+
+   virtual bool get_homotopy_info(
+      Index   n_t,
+      Number* t_ori, 
+      Number* t_dest
+   );
+
+   virtual bool get_t_and_r_map(
+      Index   n_t,
+      Index*  t_index_map, 
+      Index*  r_index_map, 
+      Index*  r_ub_con_map, 
+      Index*  r_lb_con_map
+   );
+   // zhangduo added ends
 
    virtual bool get_constraints_linearity(
       Index          m,
