@@ -6,10 +6,6 @@
 
 #include "IpAlgStrategy.hpp"
 
-#define HOMO_VAR_INDEX1 12
-#define HOMO_VAR_INDEX2 13
-#define HOMO_COEFF 1000
-
 namespace Ipopt
 {
 
@@ -37,6 +33,10 @@ public:
       const SmartPtr<RegisteredOptions>& roptions
    );
 
+   virtual bool UpdateHomotopyParameter();
+
+   bool homotopy_finish_flag;
+
 private:
    /**@name Default Compiler Generated Methods
     * (Hidden to avoid implicit creation/calling).
@@ -59,9 +59,11 @@ private:
    );
    ///@}
 
-   Number homotopy_term_coeff_;
+   Number homotopy_l1_term_coeff_;
+   Number homotopy_l2_term_coeff_;
    Number homotopy_stepsize_;
 
+   bool first_iter_;
 };
 
 } // namespace Ipopt
