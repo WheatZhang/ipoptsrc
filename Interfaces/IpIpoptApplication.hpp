@@ -187,7 +187,8 @@ public:
    // zhangduo added
    virtual bool OpenHomotopyOutputFile(
       std::string  file_name,
-      EJournalLevel print_level
+      EJournalLevel normal_print_level,
+      EJournalLevel homotopy_print_level
    );
    // zhangduo added ends
 

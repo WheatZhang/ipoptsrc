@@ -432,11 +432,12 @@ bool AmplTNLP::get_homotopy_info(
       // caution: homotopy variable id begins at 1, not 0!
       if (homo_idx[i] != NULL)
       {
+         printf("i=%d\n",i);
          t_ori[homo_idx[i]-1] = homo_begin[i];
          t_dest[homo_idx[i]-1] = homo_end[i];
          homo_variable_count++;
-         printf("homo_idx=%d, t_ori[i]=%f\n", homo_idx[i], t_ori[i]);
-         printf("homo_idx=%d, t_dest[i]=%f\n", homo_idx[i], t_dest[i]);
+         printf("homo_idx=%d, t_ori[i]=%f\n", homo_idx[i], t_ori[homo_idx[i]-1]);
+         printf("homo_idx=%d, t_dest[i]=%f\n", homo_idx[i], t_dest[homo_idx[i]-1]);
       }
    }
    DBG_ASSERT(homo_variable_count == n_t);
@@ -455,7 +456,7 @@ bool AmplTNLP::get_t_and_r_map(
    DBG_ASSERT(asl);
 
    const Index* homo_idx =  suffix_handler_->GetIntegerSuffixValues("homotopy_var_id", AmplSuffixHandler::Variable_Source);
-   const Number* r_idx =  suffix_handler_->GetIntegerSuffixValues("homotopy_L1_slack_id", AmplSuffixHandler::Variable_Source);
+   const Index* r_idx =  suffix_handler_->GetIntegerSuffixValues("homotopy_L1_slack_id", AmplSuffixHandler::Variable_Source);
    const Index* L1_ub_con_idx = suffix_handler_->GetIntegerSuffixValues("homotopy_L1_ub_id", AmplSuffixHandler::Constraint_Source);
    const Index* L1_lb_con_idx = suffix_handler_->GetIntegerSuffixValues("homotopy_L1_lb_id", AmplSuffixHandler::Constraint_Source);
 
@@ -499,7 +500,7 @@ bool AmplTNLP::get_t_and_r_map(
       // caution: homotopy variable id begins at 1, not 0!
       if (L1_ub_con_idx[i] != NULL)
       {
-         r_ub_con_map[r_idx[i]-1] = i;
+         r_ub_con_map[L1_ub_con_idx[i]-1] = i;
          homo_variable_count++;
       }
    }
@@ -515,7 +516,7 @@ bool AmplTNLP::get_t_and_r_map(
       // caution: homotopy variable id begins at 1, not 0!
       if (L1_lb_con_idx[i] != NULL)
       {
-         r_lb_con_map[r_idx[i]-1] = i;
+         r_lb_con_map[L1_lb_con_idx[i]-1] = i;
          homo_variable_count++;
       }
    }

@@ -172,10 +172,35 @@ public:
    virtual SmartPtr<const VectorSpace> x_space() const = 0;
 
    // zhangduo added
+   virtual SmartPtr<const Matrix> P_t() const
+   {
+      return NULL;
+   }
+   virtual SmartPtr<const Matrix> P_r() const
+   {
+      return NULL;
+   }
+   virtual SmartPtr<const Matrix> P_r_ub_con() const
+   {
+      return NULL;
+   }
+   virtual SmartPtr<const Matrix> P_r_lb_con() const
+   {
+      return NULL;
+   }
+   virtual SmartPtr<const Vector> t_destination() const
+   {
+      return NULL;
+   }
+   virtual SmartPtr<const Vector> t_origin() const
+   {
+      return NULL;
+   }
    virtual SmartPtr<const VectorSpace> t_space() const 
    {
       return NULL;
    }; 
+   // zhangduo added ends
 
    /** Accessor method to obtain the MatrixSpace for the Hessian
     *  matrix (or it's approximation)

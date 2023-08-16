@@ -619,7 +619,7 @@ bool TNLPAdapter::GetSpaces(
          }
       } // while (!done)
 
-      n_d_ = n_d // zhangduo added
+      n_d_ = n_d; // zhangduo added
 
       // If requested, check if there are linearly dependent equality
       // constraints
@@ -1329,7 +1329,7 @@ bool TNLPAdapter::GetHomotopySpaces(
    SmartPtr<const MatrixSpace>&    pr_space,
    SmartPtr<const MatrixSpace>&    pr_ub_con_space,
    SmartPtr<const MatrixSpace>&    pr_lb_con_space,
-   SmartPtr<const VectorSpace>&    t_space,
+   SmartPtr<const VectorSpace>&    t_space
 )
 {
    Index n_full_t;
@@ -1345,6 +1345,10 @@ bool TNLPAdapter::GetHomotopySpaces(
    retval = tnlp_->get_t_and_r_map(n_full_t_, t_index_map, r_index_map, r_ub_con_map, r_lb_con_map);
    ASSERT_EXCEPTION(retval, INVALID_TNLP, "get_t_and_r_map returned false in GetHomotopySpaces");
 
+   printf("r_ub_con_map[0]=%d\n", r_ub_con_map[0]);
+   printf("r_ub_con_map[1]=%d\n", r_ub_con_map[1]);
+   printf("r_lb_con_map[0]=%d\n", r_lb_con_map[0]);
+   printf("r_lb_con_map[1]=%d\n", r_lb_con_map[1]);
    Index n_t_var = 0;
    // x_t_map should be larger than size n_t. It's OK to have some room.
    Index* x_t_map = new Index[n_full_t_];
@@ -1363,26 +1367,26 @@ bool TNLPAdapter::GetHomotopySpaces(
          if (ipopt_idx >=0)
          {
             x_t_map[n_t_var] = ipopt_idx;
-            const Index& ipopt_idx = P_x_full_x_->CompressedPosIndices()[r_index_map[i]];
-            if (ipopt_idx < 0)
+            const Index& ipopt_idx_r = P_x_full_x_->CompressedPosIndices()[r_index_map[i]];
+            if (ipopt_idx_r < 0)
             {
                THROW_EXCEPTION(HOMOTOPY_TNLP_NOT_WELL_PREPARED, "Relavent slack variable seems to be fixed.");
             }
-            x_r_map[n_t_var] = ipopt_idx;
+            x_r_map[n_t_var] = ipopt_idx_r;
 
-            const Index& ipopt_idx = P_d_g_->CompressedPosIndices()[r_ub_con_map[i]];
-            if (ipopt_idx < 0)
+            const Index& ipopt_idx_r_ub = P_d_g_->CompressedPosIndices()[r_ub_con_map[i]];
+            if (ipopt_idx_r_ub < 0)
             {
                THROW_EXCEPTION(HOMOTOPY_TNLP_NOT_WELL_PREPARED, "Relavent slack inequality constraint does not exist.");
             }
-            d_r_ub_con_map[n_t_var] = ipopt_idx;
+            d_r_ub_con_map[n_t_var] = ipopt_idx_r_ub;
 
-            const Index& ipopt_idx = P_d_g_->CompressedPosIndices()[r_lb_con_map[i]];
-            if (ipopt_idx < 0)
+            const Index& ipopt_idx_r_lb = P_d_g_->CompressedPosIndices()[r_lb_con_map[i]];
+            if (ipopt_idx_r_lb < 0)
             {
                THROW_EXCEPTION(HOMOTOPY_TNLP_NOT_WELL_PREPARED, "Relavent slack inequality constraint does not exist.");
             }
-            d_r_lb_con_map[n_t_var] = ipopt_idx;
+            d_r_lb_con_map[n_t_var] = ipopt_idx_r_lb;
 
             n_t_var++;
          }
@@ -1392,19 +1396,19 @@ bool TNLPAdapter::GetHomotopySpaces(
          x_t_map[n_t_var] = t_index_map[i];
          x_r_map[n_t_var] = r_index_map[i];
 
-         const Index& ipopt_idx = P_d_g_->CompressedPosIndices()[r_ub_con_map[i]];
-         if (ipopt_idx < 0)
+         const Index& ipopt_idx_r_ub = P_d_g_->CompressedPosIndices()[r_ub_con_map[i]];
+         if (ipopt_idx_r_ub < 0)
          {
             THROW_EXCEPTION(HOMOTOPY_TNLP_NOT_WELL_PREPARED, "Relavent slack inequality constraint does not exist.");
          }
-         d_r_ub_con_map[n_t_var] = ipopt_idx;
+         d_r_ub_con_map[n_t_var] = ipopt_idx_r_ub;
 
-         const Index& ipopt_idx = P_d_g_->CompressedPosIndices()[r_lb_con_map[i]];
-         if (ipopt_idx < 0)
+         const Index& ipopt_idx_r_lb = P_d_g_->CompressedPosIndices()[r_lb_con_map[i]];
+         if (ipopt_idx_r_lb < 0)
          {
             THROW_EXCEPTION(HOMOTOPY_TNLP_NOT_WELL_PREPARED, "Relavent slack inequality constraint does not exist.");
          }
-         d_r_lb_con_map[n_t_var] = ipopt_idx;
+         d_r_lb_con_map[n_t_var] = ipopt_idx_r_lb;
 
          n_t_var++;
       }
@@ -1478,11 +1482,12 @@ bool TNLPAdapter::GetHomotopyInformation(
    DBG_ASSERT(dynamic_cast<DenseVector*>(&t_dest));
    values_dest = dt_dest->Values();
    Index temp = 0;
+   ExpansionMatrix* p_t = static_cast<ExpansionMatrix*>(pt_space_->MakeNew());
    for( Index i = 0; i < n_full_t_; i++ )
    {
       if (IsValid(P_x_full_x_))
       {
-         const Index& ipopt_idx = P_x_full_x_->CompressedPosIndices()[t_index_map[i]];
+         const Index& ipopt_idx = P_x_full_x_->CompressedPosIndices()[p_t->ExpandedPosIndices()[i]];
          if (ipopt_idx >=0)
          {
             values_ori[temp] = t_ori_array[i];

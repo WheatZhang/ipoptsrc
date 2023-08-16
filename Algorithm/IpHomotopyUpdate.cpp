@@ -50,13 +50,13 @@ bool HomotopyUpdate::InitializeImpl(
 bool HomotopyUpdate::UpdateHomotopyParameter()
 {
    bool distance_to_target;
-   IpCq().curr_t()->Print(*jnlst_, J_VECTOR, J_HOMOTOPY, "original t unscaled");
-   IpCq().curr_t_normalized()->Print(*jnlst_, J_VECTOR, J_HOMOTOPY, "original t scaled");
+   IpCq().curr_t()->Print(Jnlst(), J_VECTOR, J_HOMOTOPY, "original t unscaled");
+   IpCq().curr_t_normalized()->Print(Jnlst(), J_VECTOR, J_HOMOTOPY, "original t scaled");
 
    if (!first_iter_)
    {
       SmartPtr<Vector> t_diff;
-      t_diff = IpNLP().t_space().MakeNew();
+      t_diff = IpNLP().t_space()->MakeNew();
       t_diff->Copy(*(IpData().t_target_normalized()));
       t_diff->AddOneVector(-1.0, *(IpCq().curr_t_normalized()), 1.0);
       distance_to_target = t_diff->Nrm2();
@@ -67,7 +67,7 @@ bool HomotopyUpdate::UpdateHomotopyParameter()
       }
       else
       {
-         SmartPtr<Vector> new_t_target = IpNLP().t_space().MakeNew();
+         SmartPtr<Vector> new_t_target = IpNLP().t_space()->MakeNew();
          new_t_target->AddTwoVectors(1.0, *(IpCq().curr_t()), homotopy_stepsize_, *t_diff, 0.0);
          IpData().Set_t_target_normalized(new_t_target);
       }

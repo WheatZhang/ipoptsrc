@@ -133,6 +133,12 @@ public:
       const std::string& prefix
    );
 
+   // zhangduo added
+   virtual bool InitializeHomotopyRange(
+      const Journalist&  jnlst
+   );
+   // zhangduo added ends
+
    /** @name Slacks */
    ///@{
    /** Slacks for x_L (at current iterate) */
@@ -783,10 +789,10 @@ private:
    ///@}
 
    // zhangduo added
-   CachedResults<SmartPtr<const Vector> > curr_t_cache_;
-   CachedResults<SmartPtr<const Vector> > curr_t_normalized_cache_;
-   CachedResults<SmartPtr<const Vector> > t_target_denormalized_cache_;
-   CachedResults<SmartPtr<const Vector> > curr_r_normalized_cache_;
+   //CachedResults<SmartPtr<const Vector> > curr_t_cache_;
+   //CachedResults<SmartPtr<const Vector> > curr_t_normalized_cache_;
+   //CachedResults<SmartPtr<const Vector> > t_target_denormalized_cache_;
+   //CachedResults<SmartPtr<const Vector> > curr_r_normalized_cache_;
    SmartPtr<Vector> t_range_;
    SmartPtr<Vector> t_range_inv_;
    // zhangduo added ends

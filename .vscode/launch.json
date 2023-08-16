@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "/usr/local/bin/ipopt",
-            "args": ["/home/zhang/IpoptWork/debug/src/python/wocstr.nl", 
+            "args": ["/home/zhang/IpoptWork/homo_proto/src/python/wocstr.nl", 
 "-AMPL", "tol=1e-08", 
 "homotopy_output_file=/home/zhang/IpoptWork/homo_proto/src/python/homotopy.log",
 "homotopy_print_level=8",
@@ -17,7 +17,8 @@
 "output_file=/home/zhang/IpoptWork/homo_proto/src/python/wocstr.log",
 "homotopy_l1_term_coeff=100",
 "homotopy_l2_term_coeff=100",
-"homotopy_stepsize=1"
+"homotopy_stepsize=1",
+"debug_print_level=7"
 ],
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}/",

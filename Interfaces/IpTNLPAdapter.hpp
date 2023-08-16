@@ -118,7 +118,7 @@ public:
       SmartPtr<const MatrixSpace>&    pr_space,
       SmartPtr<const MatrixSpace>&    pr_ub_con_space,
       SmartPtr<const MatrixSpace>&    pr_lb_con_space,
-      SmartPtr<const VectorSpace>&    t_space,
+      SmartPtr<const VectorSpace>&    t_space
    );
 
    virtual bool GetHomotopyInformation(

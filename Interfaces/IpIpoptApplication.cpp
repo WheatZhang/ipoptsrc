@@ -183,6 +183,10 @@ ApplicationReturnStatus IpoptApplication::Initialize(
          Index ivalue;
          options_->GetIntegerValue("print_level", ivalue, "");
          EJournalLevel print_level = (EJournalLevel) ivalue;
+         // zhangduo added
+         options_->GetIntegerValue("homotopy_print_level", ivalue, "");
+         EJournalLevel homotopy_print_level = (EJournalLevel) ivalue;
+         // zhangduo added ends
          SmartPtr<Journal> stdout_jrnl = jnlst_->GetJournal("console");
          if( IsValid(stdout_jrnl) )
          {
@@ -234,6 +238,29 @@ ApplicationReturnStatus IpoptApplication::Initialize(
                return Invalid_Option;
             }
          }
+         // zhangduo added
+         // Open an output file if required
+         std::string homotopy_output_filename;
+         options_->GetStringValue("homotopy_output_file", homotopy_output_filename, "");
+         if( homotopy_output_filename != "" )
+         {
+            EJournalLevel homotopy_print_level;
+            if( options_->GetIntegerValue("homotopy_print_level", ivalue, "") )
+            {
+               homotopy_print_level = (EJournalLevel) ivalue;
+            }
+            else
+            {
+               homotopy_print_level = print_level;
+            }
+            bool openend = OpenHomotopyOutputFile(homotopy_output_filename, print_level, homotopy_print_level);
+            if( !openend )
+            {
+               jnlst_->Printf(J_ERROR, J_INITIALIZATION, "Error opening homotopy output file \"%s\"\n", homotopy_output_filename.c_str());
+               return Invalid_Option;
+            }
+         }
+         // zhangduo added ends
       }
 
       // output a description of all the options
@@ -981,14 +1008,15 @@ bool IpoptApplication::OpenOutputFile(
 // zhangduo added
 bool IpoptApplication::OpenHomotopyOutputFile(
    std::string   file_name,
-   EJournalLevel print_level
+   EJournalLevel normal_print_level,
+   EJournalLevel homotopy_print_level
 )
 {
    SmartPtr<Journal> file_jrnl = jnlst_->GetJournal("OutputFile:" + file_name);
 
    if( IsNull(file_jrnl) )
    {
-      file_jrnl = jnlst_->AddFileJournal("OutputFile:" + file_name, file_name.c_str(), J_NONE);
+      file_jrnl = jnlst_->AddFileJournal("OutputFile:" + file_name, file_name.c_str(), normal_print_level);
    }
 
    // Check, if the output file could be created properly
@@ -997,7 +1025,7 @@ bool IpoptApplication::OpenHomotopyOutputFile(
       return false;
    }
 
-   file_jrnl->SetPrintLevel(J_HOMOTOPY, print_level);
+   file_jrnl->SetPrintLevel(J_HOMOTOPY, homotopy_print_level);
 
    return true;
 }

@@ -343,6 +343,11 @@ SolverReturn IpoptAlgorithm::Optimize(
       InitializeIterates();
       IpData().TimingStats().InitializeIterates().End();
 
+      IpCq().curr_t()->Print(Jnlst(), J_VECTOR, J_HOMOTOPY, "IpCq().curr_t");
+      IpCq().curr_t_normalized()->Print(Jnlst(), J_VECTOR, J_HOMOTOPY, "IpCq().curr_t_normalized");
+      IpCq().curr_r_normalized()->Print(Jnlst(), J_VECTOR, J_HOMOTOPY, "IpCq().curr_r_normalized");
+      IpCq().t_target_denormalized()->Print(Jnlst(), J_VECTOR, J_HOMOTOPY, "IpCq().t_target_denormalized");
+
       if( !skip_print_problem_stats_ )
       {
          IpData().TimingStats().PrintProblemStatistics().Start();
@@ -351,8 +356,6 @@ SolverReturn IpoptAlgorithm::Optimize(
       }
       
       // zhangduo added test example and the homotopy loop
-
-      Number total_homotopy_distance = sqrt((t1_target-t1_start)*(t1_target-t1_start)+(t2_target-t2_start)*(t2_target-t2_start));
 
       ConvergenceCheck::ConvergenceStatus conv_status;
       SmartPtr<IteratesVector> old_successful_homo_trial;

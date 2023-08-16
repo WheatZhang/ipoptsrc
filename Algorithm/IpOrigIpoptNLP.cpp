@@ -446,7 +446,7 @@ bool OrigIpoptNLP::InitializeStructures(
 }
 
 // zhangduo added
-bool InitializeHomotopyStructures(
+bool OrigIpoptNLP::InitializeHomotopyStructures(
    SmartPtr<Vector>& homotopy_target_normalized
 )
 {
@@ -468,6 +468,8 @@ bool InitializeHomotopyStructures(
       // get homotopy spaces
       retValue = nlp_->GetHomotopySpaces(p_t_space_, p_r_space_, p_r_ub_con_space_, p_r_lb_con_space_, 
                               t_space_);
+      DBG_ASSERT(IsValid(p_t_space_));                     
+      DBG_ASSERT(IsValid(t_space_));
       if( !retValue )
       {
          jnlst_->Printf(J_WARNING, J_INITIALIZATION, "GetHomotopySpaces method for the NLP returns false.\n");
@@ -509,7 +511,8 @@ bool InitializeHomotopyStructures(
    t_destination_->Print(*jnlst_, J_VECTOR, J_INITIALIZATION, "modified t_destination_ scaled");
 
    // initialize homotopy target
-   homotopy_target_normalized->Set(0)
+   homotopy_target_normalized = t_space_->MakeNew();
+   homotopy_target_normalized->Set(0);
 
    return true;
 }

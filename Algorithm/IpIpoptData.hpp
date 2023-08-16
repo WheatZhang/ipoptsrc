@@ -379,7 +379,7 @@ public:
       SmartPtr<const Vector> t_target_normalized
    )
    {
-      t_target_normalized_ = t_target_normalized;
+      t_target_normalized_->Copy(*t_target_normalized);
    }
    Number homo_L1_weight() const
    {

@@ -193,6 +193,9 @@ bool DefaultIterateInitializer::SetInitialIterates()
    {
       return false;
    }
+   // zhangduo added
+   IpCq().InitializeHomotopyRange(Jnlst());
+   // zhangduo added ends
 
    // get a container of the current point. We will modify parts of
    // this IteratesVector to set the trial point.
